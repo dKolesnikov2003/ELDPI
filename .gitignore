@@ -1,0 +1,14 @@
+.vscode/
+.git/
+
+eldpi
+ELDPI
+libeldpi
+libeldpi_debug
+libeldpi.a
+libeldpi_debug.a
+
+obj/
+**/obj/
+*.o
+

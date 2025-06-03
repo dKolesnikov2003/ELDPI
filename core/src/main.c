@@ -17,7 +17,7 @@ int main(void){
         .bpf = "tcp",
         .date_time = "2023-10-01 12:00:00"
     };
-    CapThreadContext *ctx = start_analysis(&args);
+    Contexts *ctx = start_analysis(&args);
     if(ctx == NULL) {
         fprintf(stderr, "Ошибка при запуске анализа\n");
         return 1;
@@ -30,7 +30,8 @@ int main(void){
         }
     }
     stop_analysis(ctx);
-    destroy_analysis_ctx(ctx);
+    destroy_analysis_context(ctx->cap_ctx);
+
     printf("Hello, World!!\n");
     return 0;
 }

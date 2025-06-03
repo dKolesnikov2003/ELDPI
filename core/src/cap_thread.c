@@ -104,6 +104,7 @@ void *cap_thread(void *args) {
 
     for(int i = 0; i < THREAD_COUNT; i++) {
         decrease_producer_count(&opts->queues[i]);
+        *opts->queues[i].items = NULL;
     }
     pthread_exit(NULL);   
 }

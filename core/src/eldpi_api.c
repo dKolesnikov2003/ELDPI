@@ -84,7 +84,7 @@ void stop_analysis(Contexts *ctx) {
     pthread_join(ctx->cap_ctx->tid, NULL);
 
     for (int i = 0; i < THREAD_COUNT; i++) {
-        pthread_join(ctx->cap_ctx->tid, NULL);
+        pthread_join(ctx->dpi_threads[i].tid, NULL);
         destroy_dpi_context(&ctx->dpi_threads[i]);
     }
     

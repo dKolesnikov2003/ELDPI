@@ -62,7 +62,7 @@ static inline int flow_key_equal(const FlowKey *a, const FlowKey *b) {
 }
 
 // Инициализация nDPI для потока
-void init_dpi_thread(int thread_number, DPIThreadContext *dpi_ctx, GenericQueue *packet_queue, GenericQueue *metadata_queue, GenericQueue *offsets_queue) {
+int init_dpi_thread(int thread_number, DPIThreadContext *dpi_ctx, GenericQueue *packet_queue, GenericQueue *metadata_queue, GenericQueue *offsets_queue) {
     dpi_ctx->thread_number = thread_number;
     dpi_ctx->packet_queue = packet_queue;
     dpi_ctx->metadata_queue = metadata_queue;
@@ -70,12 +70,12 @@ void init_dpi_thread(int thread_number, DPIThreadContext *dpi_ctx, GenericQueue 
     dpi_ctx->ndpi_info = calloc(1, sizeof(NDPI_ThreadInfo));
     if (dpi_ctx->ndpi_info == NULL) {
         fprintf(stderr, "Ошибка выделения памяти под NDPI_ThreadInfo\n");
-        return;
+        return 1;
     }
     dpi_ctx->ndpi_info->ndpi_struct = ndpi_init_detection_module(NULL);
     if(dpi_ctx->ndpi_info->ndpi_struct == NULL) {
         fprintf(stderr, "nDPI: не удалось инициализировать структуру обнаружения\n");
-        return;
+        return 1;
     }
     
     // Включаем распознавание всех поддерживаемых протоколов
@@ -85,12 +85,12 @@ void init_dpi_thread(int thread_number, DPIThreadContext *dpi_ctx, GenericQueue 
     // Завершаем инициализацию (загружаем все сигнатуры)
     if(ndpi_finalize_initialization(dpi_ctx->ndpi_info->ndpi_struct) != 0) {
         fprintf(stderr, "nDPI: ошибка finalize_initialization\n");
-        return;
+        return 1;
     }
     // Инициализируем хеш-таблицу потоков (изначально все бакеты пустые)
     memset(dpi_ctx->ndpi_info->flow_table, 0, sizeof(dpi_ctx->ndpi_info->flow_table));
 
-    return;
+    return 0;
 }
 
 /// Освобождение ресурсов nDPI для потока (очистка памяти)

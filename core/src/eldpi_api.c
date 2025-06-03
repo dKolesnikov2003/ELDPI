@@ -60,13 +60,11 @@ Contexts *start_analysis(CapArgs *args) {
     }
 
     for(int i = 0; i < THREAD_COUNT; i++) {
-        init_dpi_thread(i, &dpi_threads[i], &packet_queues[i], metadata_queue, offsets_queue);
-        if (&dpi_threads[i] == NULL)
-        {
+        if (init_dpi_thread(i, &dpi_threads[i], &packet_queues[i], metadata_queue, offsets_queue) != 0) {
             fprintf(stderr, "Ошибка инициализации потока DPI №%d\n", i);
             return NULL;
         }
-        if (pthread_create(&dpi_threads->tid, NULL, dpi_thread, &dpi_threads[i])) {
+        if (pthread_create(&dpi_threads[i].tid, NULL, dpi_thread, &dpi_threads[i])) {
             perror("Ошибка при создании потока DPI");
             return NULL;
         }

@@ -34,7 +34,7 @@ typedef struct {
     GenericQueue *offsets_queue;
 } DPIThreadContext;
 
-void init_dpi_thread(int thread_number, DPIThreadContext *dpi_ctx, GenericQueue *packet_queue, GenericQueue *metadata_queue, GenericQueue *offsets_queue);
+int init_dpi_thread(int thread_number, DPIThreadContext *dpi_ctx, GenericQueue *packet_queue, GenericQueue *metadata_queue, GenericQueue *offsets_queue);
 void *dpi_thread(void *arg);
 void destroy_dpi_context(DPIThreadContext *dpi_ctx);
 

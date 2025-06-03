@@ -18,7 +18,7 @@
 #include "queue.h"
 
 
-CapThreadContext *cap_thread_init(pthread_t tid, CapArgs *args, GenericQueue *queues) {
+CapThreadContext *cap_thread_init(CapArgs *args, GenericQueue *queues) {
     if (!args || !queues) {
         fprintf(stderr, "Отсутствуют параметры захвата\n");
         return NULL;
@@ -30,7 +30,7 @@ CapThreadContext *cap_thread_init(pthread_t tid, CapArgs *args, GenericQueue *qu
         return NULL;
     }
 
-    opts->tid = tid;
+    opts->tid = 0;
     opts->pcap_handle = NULL;
     opts->cap_args = args;
     opts->queues = queues;

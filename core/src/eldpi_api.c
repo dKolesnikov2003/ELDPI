@@ -33,11 +33,11 @@ Contexts *start_analysis(CapArgs *args) {
     for(int i = 0; i < THREAD_COUNT; i++) {
         queue_init(&packet_queues[i], 1024);
     }
-    pthread_t cap_thread_tid;
-    CapThreadContext *cap_ctx = cap_thread_init(cap_thread_tid, args, packet_queues);
+    CapThreadContext *cap_ctx = cap_thread_init(args, packet_queues);
     if (!cap_ctx) {
         return NULL;
     }
+    pthread_t cap_thread_tid;
     if(pthread_create(&cap_thread_tid, NULL, cap_thread, cap_ctx) || !cap_ctx) {
         perror("Ошибка при создании потока захвата");
         return NULL;

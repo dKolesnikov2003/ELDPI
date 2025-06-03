@@ -20,5 +20,6 @@ typedef struct {
 
 CapThreadContext *cap_thread_init(pthread_t tid, CapArgs *args, GenericQueue *queues);
 void *cap_thread(void *args);
+void destroy_cap_context(CapThreadContext *opts);
 
 #endif // CAP_THREAD_H  

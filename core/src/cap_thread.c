@@ -105,8 +105,17 @@ void *cap_thread(void *args) {
     for(int i = 0; i < THREAD_COUNT; i++) {
         decrease_producer_count(&opts->queues[i]);
     }
-    pcap_close(opts->pcap_handle);
     pthread_exit(NULL);   
+}
+
+void destroy_cap_context(CapThreadContext *opts) {
+    if (opts) {
+        if (opts->pcap_handle) {
+            pcap_close(opts->pcap_handle);
+        }        
+        free(opts);
+        opts = NULL;
+    }
 }
 
 int select_thread_for_packet(const unsigned char *packet, uint32_t caplen) {

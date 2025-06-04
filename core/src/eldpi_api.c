@@ -71,6 +71,25 @@ Contexts *start_analysis(CapArgs *args) {
     }
     ctx->cap_ctx = cap_ctx;
     ctx->dpi_threads = dpi_threads;
+
+    MetadataWriterThreadContext *metadata_writer_ctx = calloc(1, sizeof(MetadataWriterThreadContext));
+    if (!metadata_writer_ctx) {
+        perror("Ошибка выделения памяти для потока записи метаданных");
+        return NULL;
+    }
+    if (init_metadata_writer_thread(metadata_writer_ctx, metadata_queue) != 0) {
+        fprintf(stderr, "Ошибка инициализации потока записи метаданных\n");
+        free(metadata_writer_ctx);
+        return NULL;
+    }
+    if(pthread_create(&metadata_writer_ctx.tid, NULL, metadata_writer_thread, &metadata_writer_ctx)){
+        perror("Ошибка при создании потока записи метаданных");
+            return NULL;
+    }
+    ctx->metadata_writer_ctx = metadata_writer_ctx;
+
+
+
     return ctx;
 }
 

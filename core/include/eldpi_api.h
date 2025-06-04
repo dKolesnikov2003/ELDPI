@@ -2,6 +2,8 @@
 #define ELDPI_API_H
 
 #include "dpi_thread.h"
+#include "metadata_writer_thread.h"
+#include "offsets_writer_thread.h"
 
 typedef struct CapThreadContext CapThreadContext;
 
@@ -17,7 +19,7 @@ typedef struct {
 typedef struct {
     CapThreadContext *cap_ctx;
     DPIThreadContext *dpi_threads;
-
+    MetadataWriterThreadContext *metadata_writer_ctx;
 } Contexts;
 
 Contexts *start_analysis(CapArgs *args);

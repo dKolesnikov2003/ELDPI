@@ -90,6 +90,9 @@ int init_dpi_thread(int thread_number, DPIThreadContext *dpi_ctx, GenericQueue *
     // Инициализируем хеш-таблицу потоков (изначально все бакеты пустые)
     memset(dpi_ctx->ndpi_info->flow_table, 0, sizeof(dpi_ctx->ndpi_info->flow_table));
 
+    increase_producer_count(dpi_ctx->metadata_queue);
+    increase_producer_count(dpi_ctx->offsets_queue);
+
     return 0;
 }
 
@@ -136,7 +139,7 @@ void *dpi_thread(void *arg)
     {
         PacketItem *item = (PacketItem *)queue_pop(dpi_ctx->packet_queue);
         if (item == NULL)
-            break;                             /* все продюсеры завершились */
+            break;
 
         /* ---- 1. Вычисляем EtherType с учётом VLAN ---- */
         uint16_t ethertype  = 0;
@@ -317,8 +320,7 @@ void *dpi_thread(void *arg)
             continue;
         }
 
-        PacketItem *offset_entry = item;                 /* передаём как есть   */
-        queue_push(dpi_ctx->offsets_queue, offset_entry);
+        queue_push(dpi_ctx->offsets_queue, item);
 
         meta->timestamp_ms  = ts_ms;
         meta->session_id    = index;
@@ -337,9 +339,8 @@ void *dpi_thread(void *arg)
         meta->dst_port = key.dst_port;
         strncpy(meta->protocol_name, proto_name, sizeof(meta->protocol_name) - 1);
 
-        queue_push(dpi_ctx->metadata_queue, meta);       /* <-- правка: передаём сам указатель */
+        queue_push(dpi_ctx->metadata_queue, meta);
 
-        /* item не освобождаем: он теперь во внешней очереди offsets_queue */
     }
     queue_destroy(dpi_ctx->packet_queue);
     decrease_producer_count(dpi_ctx->metadata_queue);

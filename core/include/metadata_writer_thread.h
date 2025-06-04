@@ -20,4 +20,13 @@ typedef struct {
     char protocol_name[64];
 } MetadataItem;
 
+typedef struct {
+    pthread_t tid;
+    GenericQueue *metadata_queue;
+} MetadataWriterThreadContext;
+
+int init_metadata_writer_thread(MetadataWriterThreadContext *metadata_writer_ctx, GenericQueue *metadata_queue);
+void *metadata_writer_thread(void *arg);
+void destroy_metadata_writer_context(MetadataWriterThreadContext *metadata_writer_ctx);
+
 #endif // METADATA_WRITER_THREAD_H

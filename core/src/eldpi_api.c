@@ -74,29 +74,43 @@ Contexts *start_analysis(CapArgs *args) {
     return ctx;
 }
 
-void stop_analysis(Contexts *ctx) {
-    if (!ctx || !ctx->cap_ctx->tid || !ctx->cap_ctx->pcap_handle) {
-        fprintf(stderr, "Нечего останавливать\n");
-        return;
-    }
-    fprintf(stdout, "Остановка анализа...\n");
-    pcap_breakloop(ctx->cap_ctx->pcap_handle);
+void terminate_analysis(Contexts *ctx) {
     pthread_join(ctx->cap_ctx->tid, NULL);
 
     for (int i = 0; i < THREAD_COUNT; i++) {
         pthread_join(ctx->dpi_threads[i].tid, NULL);
         destroy_dpi_context(&ctx->dpi_threads[i]);
     }
-    
+    free(ctx->dpi_threads);
 
 
 
     destroy_cap_context(ctx->cap_ctx);
-    fprintf(stdout, "Захват остановлен\n");
+    fprintf(stdout, "Анализ завершён успешно\n");
 }
 
-void destroy_analysis_context(CapThreadContext *cap_ctx) {
-    if (!cap_ctx) return;
-    free(cap_ctx->queues);
-    free(cap_ctx);
+
+void wait_analysis(Contexts *ctx) {
+    if (!ctx || !ctx->cap_ctx->tid || !ctx->cap_ctx->pcap_handle) {
+        fprintf(stderr, "Неверный контекст анализа\n");
+        return;
+    }
+    terminate_analysis(ctx);
+}
+
+void stop_analysis(Contexts *ctx) {
+    if (!ctx || !ctx->cap_ctx->tid || !ctx->cap_ctx->pcap_handle) {
+        fprintf(stderr, "Неверный контекст анализа\n");
+        return;
+    }
+    fprintf(stdout, "Остановка анализа...\n");
+    pcap_breakloop(ctx->cap_ctx->pcap_handle);
+    terminate_analysis(ctx);
+}
+
+void destroy_analysis_context(Contexts *ctx) {
+    if (!ctx) return;
+    free(ctx->cap_ctx->queues);
+    free(ctx->cap_ctx);
+    free(ctx);
 }

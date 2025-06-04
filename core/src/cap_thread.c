@@ -86,8 +86,6 @@ void packet_handler(unsigned char *user, const struct pcap_pkthdr *header, const
 
     int thread_number = select_thread_for_packet(item->data, header->caplen);
 
-    printf("Пакет захвачен в потоке %d, длина: %u\n", thread_number, header->caplen);
-
     queue_push(&opts->queues[thread_number], item);
 }
 
@@ -113,9 +111,8 @@ void destroy_cap_context(CapThreadContext *opts) {
     if (opts) {
         if (opts->pcap_handle) {
             pcap_close(opts->pcap_handle);
-        }        
-        free(opts);
-        opts = NULL;
+            opts->pcap_handle = NULL;
+        }
     }
 }
 

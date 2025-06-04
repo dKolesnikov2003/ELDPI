@@ -95,8 +95,6 @@ int init_dpi_thread(int thread_number, DPIThreadContext *dpi_ctx, GenericQueue *
 
 /// Освобождение ресурсов nDPI для потока (очистка памяти)
 void destroy_dpi_context(DPIThreadContext *dpi_ctx) {
-    printf("\n ВЫЗВАН destroy_dpi_context для потока %d\n", dpi_ctx->thread_number);
-
     if (dpi_ctx == NULL) {
         return;
     }
@@ -127,8 +125,6 @@ void destroy_dpi_context(DPIThreadContext *dpi_ctx) {
         free(dpi_ctx->ndpi_info);
         dpi_ctx->ndpi_info = NULL;
     }
-
-    free(dpi_ctx);
 }
 
 
@@ -345,7 +341,7 @@ void *dpi_thread(void *arg)
 
         /* item не освобождаем: он теперь во внешней очереди offsets_queue */
     }
-
+    queue_destroy(dpi_ctx->packet_queue);
     decrease_producer_count(dpi_ctx->metadata_queue);
     decrease_producer_count(dpi_ctx->offsets_queue);
     return NULL;

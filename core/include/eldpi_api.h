@@ -22,6 +22,7 @@ typedef struct {
 
 Contexts *start_analysis(CapArgs *args);
 void stop_analysis(Contexts *ctx);
-void destroy_analysis_context(CapThreadContext *ctx);
+void wait_analysis(Contexts *ctx);
+void destroy_analysis_context(Contexts *ctx);
 
 #endif // ELDPI_API_H

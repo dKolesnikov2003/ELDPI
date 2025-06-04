@@ -22,15 +22,16 @@ int main(void){
         fprintf(stderr, "Ошибка при запуске анализа\n");
         return 1;
     }
-    char input;
-    printf("Введите 's' для остановки анализа: ");
-    while ((input = getchar()) != 's') {
-        if (input != '\n') { // Игнорируем перевод строки
-            printf("Неверный ввод. Пожалуйста, введите 's': ");
-        }
-    }
-    stop_analysis(ctx);
-    destroy_analysis_context(ctx->cap_ctx);
+    // char input;
+    // printf("Введите 's' для остановки анализа: ");
+    // while ((input = getchar()) != 's') {
+    //     if (input != '\n') { // Игнорируем перевод строки
+    //         printf("Неверный ввод. Пожалуйста, введите 's': ");
+    //     }
+    // }
+    // stop_analysis(ctx);
+    wait_analysis(ctx);
+    destroy_analysis_context(ctx);
 
     printf("Hello, World!!\n");
     return 0;

@@ -40,7 +40,7 @@ Contexts *start_analysis(CapArgs *args) {
     pthread_t cap_thread_tid;
     if(pthread_create(&cap_thread_tid, NULL, cap_thread, cap_ctx) || !cap_ctx) {
         perror("Ошибка при создании потока захвата");
-        return NULL;
+    return NULL;
     }
     cap_ctx->tid = cap_thread_tid;
 
@@ -82,7 +82,7 @@ Contexts *start_analysis(CapArgs *args) {
         free(metadata_writer_ctx);
         return NULL;
     }
-    if(pthread_create(&metadata_writer_ctx.tid, NULL, metadata_writer_thread, &metadata_writer_ctx)){
+    if(pthread_create(&metadata_writer_ctx->tid, NULL, metadata_writer_thread, metadata_writer_ctx)){
         perror("Ошибка при создании потока записи метаданных");
             return NULL;
     }
@@ -102,7 +102,10 @@ void terminate_analysis(Contexts *ctx) {
     }
     free(ctx->dpi_threads);
 
-
+    pthread_join(ctx->metadata_writer_ctx->tid, NULL);
+    destroy_metadata_writer_context(ctx->metadata_writer_ctx);
+    free(ctx->metadata_writer_ctx);
+    ctx->metadata_writer_ctx = NULL;
 
     destroy_cap_context(ctx->cap_ctx);
     fprintf(stdout, "Анализ завершён успешно\n");

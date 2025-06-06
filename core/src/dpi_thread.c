@@ -14,7 +14,7 @@
 #include "common.h"
 #include "queue.h"
 #include "cap_thread.h"
-#include "matadata_writer_thread.h"
+#include "metadata_writer_thread.h"
 #include "offsets_writer_thread.h"
 
 
@@ -107,8 +107,6 @@ void destroy_dpi_context(DPIThreadContext *dpi_ctx) {
             FlowNode *node = dpi_ctx->ndpi_info->flow_table[i];
             while (node != NULL) {
                 FlowNode *next = node->next;
-                printf("Free %p  next=%p\n", (void*)node, (void*)next);
-
                 if (node->ndpi_flow != NULL) {
                     ndpi_flow_free(node->ndpi_flow);
                     node->ndpi_flow = NULL;
@@ -136,11 +134,11 @@ void *dpi_thread(void *arg)
     DPIThreadContext *dpi_ctx = (DPIThreadContext *)arg;
 
     for (;;)
-    {
+    {   
         PacketItem *item = (PacketItem *)queue_pop(dpi_ctx->packet_queue);
-        if (item == NULL)
+        if (item == NULL) {
             break;
-
+        }
         /* ---- 1. Вычисляем EtherType с учётом VLAN ---- */
         uint16_t ethertype  = 0;
         unsigned int offset = 14;              /* базовая длина Ethernet-II */
@@ -337,7 +335,7 @@ void *dpi_thread(void *arg)
         }
         meta->src_port = key.src_port;
         meta->dst_port = key.dst_port;
-        strncpy(meta->protocol_name, proto_name, sizeof(meta->protocol_name) - 1);
+        strncpy(meta->protocol_name, proto_name, sizeof(meta->protocol_name) - 1);           
 
         queue_push(dpi_ctx->metadata_queue, meta);
 

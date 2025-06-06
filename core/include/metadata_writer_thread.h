@@ -2,6 +2,10 @@
 #define METADATA_WRITER_THREAD_H
 
 #include <netinet/in.h>
+#include <pthread.h>
+
+#include "queue.h"
+
 
 typedef struct {
     uint64_t timestamp_ms;

@@ -62,7 +62,7 @@ static inline int flow_key_equal(const FlowKey *a, const FlowKey *b) {
 }
 
 // Инициализация nDPI для потока
-int init_dpi_thread(int thread_number, DPIThreadContext *dpi_ctx, GenericQueue *packet_queue, GenericQueue *metadata_queue, GenericQueue *offsets_queue) {
+int dpi_thread_init(int thread_number, DPIThreadContext *dpi_ctx, GenericQueue *packet_queue, GenericQueue *metadata_queue, GenericQueue *offsets_queue) {
     dpi_ctx->thread_number = thread_number;
     dpi_ctx->packet_queue = packet_queue;
     dpi_ctx->metadata_queue = metadata_queue;
@@ -125,6 +125,10 @@ void destroy_dpi_context(DPIThreadContext *dpi_ctx) {
 
         free(dpi_ctx->ndpi_info);
         dpi_ctx->ndpi_info = NULL;
+    }
+    if (dpi_ctx->packet_queue != NULL) {
+        queue_destroy(dpi_ctx->packet_queue);
+        // dpi_ctx->packet_queue = NULL;
     }
 }
 
@@ -340,7 +344,6 @@ void *dpi_thread(void *arg)
         queue_push(dpi_ctx->metadata_queue, meta);
 
     }
-    queue_destroy(dpi_ctx->packet_queue);
     decrease_producer_count(dpi_ctx->metadata_queue);
     decrease_producer_count(dpi_ctx->offsets_queue);
     return NULL;

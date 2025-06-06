@@ -17,6 +17,26 @@
 
 char name_pattern[128];
 
+static void set_name_pattern(Contexts *ctx) {
+    time_t now = time(NULL);
+    struct tm tm = *localtime(&now);
+    char datebuf[32];
+    strftime(datebuf, sizeof(datebuf), "%Y-%m-%d_%H-%M-%S", &tm);
+    char source_buf[128];
+    strncpy(source_buf, ctx->cap_ctx->cap_args->source_name, sizeof(source_buf) - 1);
+    source_buf[sizeof(source_buf) - 1] = '\0';
+    char *base_name = basename(source_buf);
+    for (char *p = base_name; *p; ++p) {
+        if (*p == '.') {
+            *p = '-';
+        }
+    }
+    snprintf(name_pattern, sizeof(name_pattern),
+            "%c_%s_%s",
+            (ctx->cap_ctx->cap_args->source_type == CAP_SRC_FILE ? 'f' : 'i'),
+            base_name, datebuf);
+}
+
 Contexts *start_analysis(CapArgs *args) {
     if (!args) {
         fprintf(stderr, "Неверные параметры захвата\n");
@@ -29,6 +49,7 @@ Contexts *start_analysis(CapArgs *args) {
         return NULL;
     }
 
+
     // Поток захвата пакетов
     GenericQueue *packet_queues = calloc(THREAD_COUNT, sizeof(GenericQueue));
     if (!packet_queues) {
@@ -38,16 +59,20 @@ Contexts *start_analysis(CapArgs *args) {
     for(int i = 0; i < THREAD_COUNT; i++) {
         queue_init(&packet_queues[i], 1024);
     }
-    CapThreadContext *cap_ctx = cap_thread_init(args, packet_queues);
+    CapThreadContext *cap_ctx = calloc(1, sizeof(CapThreadContext));
     if (!cap_ctx) {
+        perror("Ошибка выделения памяти для контекста захвата");
         return NULL;
     }
-    pthread_t cap_thread_tid;
-    if(pthread_create(&cap_thread_tid, NULL, cap_thread, cap_ctx) || !cap_ctx) {
+    if(cap_thread_init(cap_ctx, args, packet_queues) != 0) {
+        fprintf(stderr, "Ошибка инициализации потока захвата\n");
+        return NULL;
+    }  
+    if(pthread_create(&cap_ctx->tid, NULL, cap_thread, cap_ctx) || !cap_ctx) {
         perror("Ошибка при создании потока захвата");
-    return NULL;
+        return NULL;
     }
-    cap_ctx->tid = cap_thread_tid;
+
 
     // Потоки DPI
     GenericQueue *metadata_queue = calloc(1, sizeof(GenericQueue));
@@ -65,7 +90,7 @@ Contexts *start_analysis(CapArgs *args) {
     }
 
     for(int i = 0; i < THREAD_COUNT; i++) {
-        if (init_dpi_thread(i, &dpi_threads[i], &packet_queues[i], metadata_queue, offsets_queue) != 0) {
+        if (dpi_thread_init(i, &dpi_threads[i], &packet_queues[i], metadata_queue, offsets_queue) != 0) {
             fprintf(stderr, "Ошибка инициализации потока DPI №%d\n", i);
             return NULL;
         }
@@ -77,35 +102,15 @@ Contexts *start_analysis(CapArgs *args) {
     ctx->cap_ctx = cap_ctx;
     ctx->dpi_threads = dpi_threads;
 
-    time_t now = time(NULL);
-    struct tm tm = *localtime(&now);
 
-    char datebuf[32];
-    strftime(datebuf, sizeof(datebuf), "%Y-%m-%d_%H-%M-%S", &tm);
-
-    char source_buf[128];
-    strncpy(source_buf, ctx->cap_ctx->cap_args->source_name, sizeof(source_buf) - 1);
-    source_buf[sizeof(source_buf) - 1] = '\0';
-
-    char *base_name = basename(source_buf);
-
-    for (char *p = base_name; *p; ++p) {
-        if (*p == '.') {
-            *p = '-';
-        }
-    }
-
-    snprintf(name_pattern, sizeof(name_pattern),
-            "%c_%s_%s",
-            (ctx->cap_ctx->cap_args->source_type == CAP_SRC_FILE ? 'f' : 'i'),
-            base_name, datebuf);
-
+    // Поток сохранения метаданных
+    set_name_pattern(ctx);
     MetadataWriterThreadContext *metadata_writer_ctx = calloc(1, sizeof(MetadataWriterThreadContext));
     if (!metadata_writer_ctx) {
         perror("Ошибка выделения памяти для потока записи метаданных");
         return NULL;
     }
-    if (init_metadata_writer_thread(metadata_writer_ctx, metadata_queue, name_pattern) != 0) {
+    if (metadata_writer_thread_init(metadata_writer_ctx, metadata_queue, name_pattern) != 0) {
         fprintf(stderr, "Ошибка инициализации потока записи метаданных\n");
         free(metadata_writer_ctx);
         return NULL;
@@ -128,14 +133,30 @@ void terminate_analysis(Contexts *ctx) {
         pthread_join(ctx->dpi_threads[i].tid, NULL);
         destroy_dpi_context(&ctx->dpi_threads[i]);
     }
-    free(ctx->dpi_threads);
-
+    free(ctx->dpi_threads[0].packet_queue);
+    for (int i = 0; i < THREAD_COUNT; i++) {
+        ctx->dpi_threads[i].packet_queue = NULL;
+    }
+    if (ctx->dpi_threads != NULL){
+        free(ctx->dpi_threads);
+        ctx->dpi_threads = NULL;
+    }
+    
     pthread_join(ctx->metadata_writer_ctx->tid, NULL);
     destroy_metadata_writer_context(ctx->metadata_writer_ctx);
-    free(ctx->metadata_writer_ctx);
-    ctx->metadata_writer_ctx = NULL;
+    if (ctx->metadata_writer_ctx != NULL) {
+        free(ctx->metadata_writer_ctx);
+        ctx->metadata_writer_ctx = NULL;
+    }
+    
 
     destroy_cap_context(ctx->cap_ctx);
+    if (ctx->cap_ctx != NULL) {
+        free(ctx->cap_ctx);
+        ctx->cap_ctx = NULL;
+    }
+    
+    
     fprintf(stdout, "Анализ завершён успешно\n");
 }
 
@@ -164,7 +185,5 @@ char* get_data_dir() {
 
 void destroy_analysis_context(Contexts *ctx) {
     if (!ctx) return;
-    free(ctx->cap_ctx->queues);
-    free(ctx->cap_ctx);
     free(ctx);
 }

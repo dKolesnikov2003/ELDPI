@@ -18,56 +18,48 @@
 #include "queue.h"
 
 
-CapThreadContext *cap_thread_init(CapArgs *args, GenericQueue *queues) {
-    if (!args || !queues) {
+int cap_thread_init(CapThreadContext *cap_ctx, CapArgs *args, GenericQueue *queues) {
+    if (!cap_ctx || !args || !queues) {
         fprintf(stderr, "Отсутствуют параметры захвата\n");
-        return NULL;
+        return 1;
     }
 
-    CapThreadContext *opts = calloc(1, sizeof(*opts));
-    if (!opts) {
-        perror("Ошибка выделения памяти для параметров потока захвата");
-        return NULL;
-    }
-
-    opts->tid = 0;
-    opts->pcap_handle = NULL;
-    opts->cap_args = args;
-    opts->queues = queues;
+    cap_ctx->tid = 0;
+    cap_ctx->pcap_handle = NULL;
+    cap_ctx->cap_args = args;
+    cap_ctx->queues = queues;
     
-    // Инициализация очередей
     for(int i = 0; i < THREAD_COUNT; i++) {
-        increase_producer_count(&opts->queues[i]);
+        increase_producer_count(&cap_ctx->queues[i]);
     }
 
     char errbuf[PCAP_ERRBUF_SIZE];
-    if(opts->cap_args->source_type == CAP_SRC_FILE) {
-        opts->pcap_handle = pcap_open_offline(opts->cap_args->source_name, errbuf);
-    } else if(opts->cap_args->source_type == CAP_SRC_IFACE) {
-        opts->pcap_handle = pcap_open_live(opts->cap_args->source_name, 65535, 1, 1000, errbuf);
-        if(opts->cap_args->bpf && opts->pcap_handle) {
+    if(cap_ctx->cap_args->source_type == CAP_SRC_FILE) {
+        cap_ctx->pcap_handle = pcap_open_offline(cap_ctx->cap_args->source_name, errbuf);
+    } else if(cap_ctx->cap_args->source_type == CAP_SRC_IFACE) {
+        cap_ctx->pcap_handle = pcap_open_live(cap_ctx->cap_args->source_name, 65535, 1, 1000, errbuf);
+        if(cap_ctx->cap_args->bpf && cap_ctx->pcap_handle) {
             struct bpf_program prog;
-            if(pcap_compile(opts->pcap_handle, &prog, opts->cap_args->bpf, 1, PCAP_NETMASK_UNKNOWN) == -1 ||
-               pcap_setfilter(opts->pcap_handle, &prog) == -1) {
-                fprintf(stderr, "BPF ошибка: %s\n", pcap_geterr(opts->pcap_handle));
+            if(pcap_compile(cap_ctx->pcap_handle, &prog, cap_ctx->cap_args->bpf, 1, PCAP_NETMASK_UNKNOWN) == -1 ||
+               pcap_setfilter(cap_ctx->pcap_handle, &prog) == -1) {
+                fprintf(stderr, "BPF ошибка: %s\n", pcap_geterr(cap_ctx->pcap_handle));
             }
             pcap_freecode(&prog);
         }
     }
-    if (!opts->pcap_handle) {               
+    if (!cap_ctx->pcap_handle) {               
         fprintf(stderr, "Ошибка pcap_open_*: %s\n", errbuf);
         for (int i = 0; i < THREAD_COUNT; i++)
-            decrease_producer_count(&opts->queues[i]);
-        free(opts);
-        return NULL;
+            decrease_producer_count(&cap_ctx->queues[i]);
+        return 1;
     }
-    if(opts->cap_args->source_type == CAP_SRC_FILE && !access(opts->cap_args->source_name, F_OK)) {
-        fprintf(stdout, "Захват из файла: %s\n", opts->cap_args->source_name);
-    } else if(opts->cap_args->source_type == CAP_SRC_IFACE && if_nametoindex(opts->cap_args->source_name)) {
-        fprintf(stdout, "Захват с интерфейса: %s\n", opts->cap_args->source_name);
+    if(cap_ctx->cap_args->source_type == CAP_SRC_FILE && !access(cap_ctx->cap_args->source_name, F_OK)) {
+        fprintf(stdout, "Захват из файла: %s\n", cap_ctx->cap_args->source_name);
+    } else if(cap_ctx->cap_args->source_type == CAP_SRC_IFACE && if_nametoindex(cap_ctx->cap_args->source_name)) {
+        fprintf(stdout, "Захват с интерфейса: %s\n", cap_ctx->cap_args->source_name);
     } 
 
-    return opts;
+    return 0;
 }
 
 int select_thread_for_packet(const unsigned char *packet, uint32_t caplen);

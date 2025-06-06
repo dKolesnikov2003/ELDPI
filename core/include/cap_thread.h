@@ -18,7 +18,7 @@ typedef struct {
     unsigned char data[];
 } PacketItem;
 
-CapThreadContext *cap_thread_init(CapArgs *args, GenericQueue *queues);
+int cap_thread_init(CapThreadContext *cap_ctx, CapArgs *args, GenericQueue *queues);
 void *cap_thread(void *args);
 void destroy_cap_context(CapThreadContext *opts);
 

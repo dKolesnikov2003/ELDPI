@@ -35,7 +35,7 @@ typedef struct {
     char db_path[128];
 } MetadataWriterThreadContext;
 
-int init_metadata_writer_thread(MetadataWriterThreadContext *metadata_writer_ctx, GenericQueue *metadata_queue, const char *name_pattern);
+int metadata_writer_thread_init(MetadataWriterThreadContext *metadata_writer_ctx, GenericQueue *metadata_queue, const char *name_pattern);
 void *metadata_writer_thread(void *arg);
 void destroy_metadata_writer_context(MetadataWriterThreadContext *metadata_writer_ctx);
 

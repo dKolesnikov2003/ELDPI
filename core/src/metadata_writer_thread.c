@@ -41,7 +41,7 @@ static int ensure_dir_exists(const char *dir)
     return (mkdir(tmp, 0755) && errno != EEXIST) ? -1 : 0;
 }
 
-int init_metadata_writer_thread(MetadataWriterThreadContext *ctx,
+int metadata_writer_thread_init(MetadataWriterThreadContext *ctx,
                                 GenericQueue *metadata_queue,
                                 const char *name_pattern)
 {
@@ -181,10 +181,6 @@ void *metadata_writer_thread(void *arg) {
 finish:
     if (ins) sqlite3_finalize(ins);
     if (db)  sqlite3_close(db);
-
-    queue_destroy(ctx->metadata_queue);
-    free(ctx->metadata_queue);
-    ctx->metadata_queue = NULL;
 
     printf("Сохранение метаданных анализа завершено успешно\n");
     pthread_exit(NULL);

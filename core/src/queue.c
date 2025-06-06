@@ -47,6 +47,7 @@ void decrease_producer_count(GenericQueue *q) {
 
 void queue_destroy(GenericQueue *q) {
     free(q->items);
+    q->items = NULL;
     pthread_mutex_destroy(&q->mutex);
     pthread_cond_destroy(&q->cond_nonempty);
     pthread_cond_destroy(&q->cond_nonfull);

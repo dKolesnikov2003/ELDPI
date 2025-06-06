@@ -13,3 +13,10 @@ obj/
 **/obj/
 *.o
 
+data/
+**/data/
+*.db
+*.sqlite
+*.sqlite3
+*.pcap
+

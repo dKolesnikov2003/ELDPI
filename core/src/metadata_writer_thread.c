@@ -7,28 +7,30 @@
 
 #include "common.h"
 #include "queue.h"
+#include "eldpi_api.h"
 
 
-int init_metadata_writer_thread(MetadataWriterThreadContext *metadata_writer_ctx, GenericQueue *metadata_queue) {
-    if (!metadata_writer_ctx || !metadata_queue) {
+int init_metadata_writer_thread(MetadataWriterThreadContext *metadata_writer_ctx, GenericQueue *metadata_queue, const char *name_pattern) {
+    if (!metadata_writer_ctx || !metadata_queue || !name_pattern) {
         fprintf(stderr, "Неверные параметры для инициализации потока записи метаданных пакетов\n");
         return 1;
     }
 
     metadata_writer_ctx->tid = 0;
     metadata_writer_ctx->metadata_queue = metadata_queue;
+    metadata_writer_ctx->name_pattern = name_pattern;
 
     return 0;
 }
 
 void *metadata_writer_thread(void *arg) {
     MetadataWriterThreadContext *metadata_writer_ctx = (MetadataWriterThreadContext *)arg;
+    printf("Поток записи метаданных запущен: %s\n", metadata_writer_ctx->name_pattern);
 
     for (;;) {
         MetadataItem *item = (MetadataItem *)queue_pop(metadata_writer_ctx->metadata_queue);
 
         if (item == NULL) {
-            printf("NULL\n");
             break;
         }
         printf("\n");

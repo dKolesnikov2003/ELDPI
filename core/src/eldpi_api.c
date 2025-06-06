@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <time.h>
+#include <string.h>
+#include <libgen.h>
 
 #include <pcap.h>
 
@@ -72,12 +75,37 @@ Contexts *start_analysis(CapArgs *args) {
     ctx->cap_ctx = cap_ctx;
     ctx->dpi_threads = dpi_threads;
 
+    char name_pattern[128];
+
+    time_t now = time(NULL);
+    struct tm tm = *localtime(&now);
+
+    char datebuf[32];
+    strftime(datebuf, sizeof(datebuf), "%Y-%m-%d_%H-%M-%S", &tm);
+
+    char source_buf[128];
+    strncpy(source_buf, ctx->cap_ctx->cap_args->source_name, sizeof(source_buf) - 1);
+    source_buf[sizeof(source_buf) - 1] = '\0';
+
+    char *base_name = basename(source_buf);
+
+    for (char *p = base_name; *p; ++p) {
+        if (*p == '.') {
+            *p = '-';
+        }
+    }
+
+    snprintf(name_pattern, sizeof(name_pattern),
+            "%c_%s_%s",
+            (ctx->cap_ctx->cap_args->source_type == CAP_SRC_FILE ? 'f' : 'i'),
+            base_name, datebuf);
+
     MetadataWriterThreadContext *metadata_writer_ctx = calloc(1, sizeof(MetadataWriterThreadContext));
     if (!metadata_writer_ctx) {
         perror("Ошибка выделения памяти для потока записи метаданных");
         return NULL;
     }
-    if (init_metadata_writer_thread(metadata_writer_ctx, metadata_queue) != 0) {
+    if (init_metadata_writer_thread(metadata_writer_ctx, metadata_queue, name_pattern) != 0) {
         fprintf(stderr, "Ошибка инициализации потока записи метаданных\n");
         free(metadata_writer_ctx);
         return NULL;
@@ -129,6 +157,10 @@ void stop_analysis(Contexts *ctx) {
     pcap_breakloop(ctx->cap_ctx->pcap_handle);
     terminate_analysis(ctx);
 }
+
+char* get_data_dir() {
+    return DATA_DIR;
+} 
 
 void destroy_analysis_context(Contexts *ctx) {
     if (!ctx) return;

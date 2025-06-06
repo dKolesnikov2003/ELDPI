@@ -27,9 +27,10 @@ typedef struct {
 typedef struct {
     pthread_t tid;
     GenericQueue *metadata_queue;
+    const char *name_pattern;
 } MetadataWriterThreadContext;
 
-int init_metadata_writer_thread(MetadataWriterThreadContext *metadata_writer_ctx, GenericQueue *metadata_queue);
+int init_metadata_writer_thread(MetadataWriterThreadContext *metadata_writer_ctx, GenericQueue *metadata_queue, const char *name_pattern);
 void *metadata_writer_thread(void *arg);
 void destroy_metadata_writer_context(MetadataWriterThreadContext *metadata_writer_ctx);
 

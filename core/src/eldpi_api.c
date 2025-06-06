@@ -15,6 +15,8 @@
 #include "dpi_thread.h"
 
 
+char name_pattern[128];
+
 Contexts *start_analysis(CapArgs *args) {
     if (!args) {
         fprintf(stderr, "Неверные параметры захвата\n");
@@ -74,8 +76,6 @@ Contexts *start_analysis(CapArgs *args) {
     }
     ctx->cap_ctx = cap_ctx;
     ctx->dpi_threads = dpi_threads;
-
-    char name_pattern[128];
 
     time_t now = time(NULL);
     struct tm tm = *localtime(&now);

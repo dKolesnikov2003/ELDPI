@@ -4,8 +4,12 @@
 #include <netinet/in.h>
 #include <pthread.h>
 
+
 #include "queue.h"
 
+
+#define METADATA_BATCH_MAX 512
+#define METADATA_BATCH_MAX_MS 1000 
 
 typedef struct {
     uint64_t timestamp_ms;
@@ -28,6 +32,7 @@ typedef struct {
     pthread_t tid;
     GenericQueue *metadata_queue;
     const char *name_pattern;
+    char db_path[128];
 } MetadataWriterThreadContext;
 
 int init_metadata_writer_thread(MetadataWriterThreadContext *metadata_writer_ctx, GenericQueue *metadata_queue, const char *name_pattern);

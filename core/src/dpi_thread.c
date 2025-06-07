@@ -304,7 +304,7 @@ void *dpi_thread(void *arg)
                     : proto.proto.master_protocol);
         }
 
-        OffsetItem *offs_item = calloc(1, sizeof *item);
+        OffsetItem *offs_item = calloc(1, sizeof(OffsetItem));
         if (!offs_item) {
             fprintf(stderr, "Поток %d: недостаточно памяти (OffsetItem)\n",
                     dpi_ctx->thread_number);
@@ -312,7 +312,7 @@ void *dpi_thread(void *arg)
             continue;
         }
 
-        MetadataItem *meta = calloc(1, sizeof *meta);
+        MetadataItem *meta = calloc(1, sizeof(MetadataItem));
         if (!meta) {
             fprintf(stderr, "Поток %d: недостаточно памяти (MetadataItem)\n",
                     dpi_ctx->thread_number);
@@ -322,7 +322,7 @@ void *dpi_thread(void *arg)
 
         offs_item->timestamp_ms = ts_ms;
         offs_item->packet       = item;
-        queue_push(dpi_ctx->offsets_queue, item);
+        queue_push(dpi_ctx->offsets_queue, offs_item);
 
         meta->timestamp_ms  = ts_ms;
         meta->session_id    = index;

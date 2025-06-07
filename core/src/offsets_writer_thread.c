@@ -56,9 +56,10 @@ void *offsets_writer_thread(void *arg) {
         }
 
         printf("offsets_writer_thread: Получен элемент с timestamp %lu\n", item->timestamp_ms);
+        printf("offsets_writer_thread: Получен пакет с длиной %d\n\n", item->packet->header.caplen);
 
-        // free(item->packet);
-        // free(item);
+        free(item->packet);
+        free(item);
     }
     printf("Сохранение пакетов завершено успешно\n");
     pthread_exit(NULL);

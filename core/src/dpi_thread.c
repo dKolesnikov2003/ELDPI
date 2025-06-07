@@ -346,5 +346,6 @@ void *dpi_thread(void *arg)
     }
     decrease_producer_count(dpi_ctx->metadata_queue);
     decrease_producer_count(dpi_ctx->offsets_queue);
-    return NULL;
+    fprintf(stdout, "Поток анализа №%d завершён успешно\n", ++dpi_ctx->thread_number);
+    pthread_exit(NULL);
 }

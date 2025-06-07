@@ -172,9 +172,6 @@ void terminate_analysis(Contexts *ctx) {
         free(ctx->cap_ctx);
         ctx->cap_ctx = NULL;
     }
-    
-    
-    fprintf(stdout, "Анализ завершён успешно\n");
 }
 
 

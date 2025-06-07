@@ -48,6 +48,53 @@ int offsets_writer_thread_init(OffsetsWriterThreadContext *ctx,
 void *offsets_writer_thread(void *arg) {
     OffsetsWriterThreadContext *ctx = (OffsetsWriterThreadContext *) arg;
 
+    int  dlt     = pcap_datalink(ctx->cap_ctx->pcap_handle);
+    int  snaplen = pcap_snapshot(ctx->cap_ctx->pcap_handle);
+
+    pcap_t *dead = pcap_open_dead(dlt, snaplen);
+    if (!dead) {
+        fprintf(stderr, "pcap_open_dead failed\n");
+        goto finish;
+    }
+    pcap_dumper_t *dumper = pcap_dump_open(dead, ctx->pcap_path);
+    if (!dumper) {
+        fprintf(stderr, "pcap_dump_open: %s\n", pcap_geterr(dead));
+        goto finish_dead;
+    }
+    FILE *dump_fp = pcap_dump_file(dumper); 
+
+    sqlite3 *db = NULL;
+    sqlite3_stmt *ins = NULL;
+    int rc = sqlite3_open_v2(ctx->db_path, &db,
+                             SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE,
+                             NULL);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "sqlite3_open: %s\n", sqlite3_errmsg(db));
+        goto finish_dumper;
+    }
+
+    sqlite3_exec(db, "PRAGMA journal_mode=WAL;", NULL, NULL, NULL);
+    sqlite3_exec(db, "PRAGMA synchronous=NORMAL;", NULL, NULL, NULL);
+
+    char create_sql[1024];
+    snprintf(create_sql, sizeof(create_sql),
+        "CREATE TABLE IF NOT EXISTS \"%s\" ("
+        "timestamp_ms INTEGER PRIMARY KEY,"
+        "file_offset  INTEGER NOT NULL,"
+        "packet_len   INTEGER NOT NULL);",
+        ctx->name_pattern);
+
+    rc = sqlite3_exec(db, create_sql, NULL, NULL, NULL);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "CREATE offsets table: %s\n", sqlite3_errmsg(db));
+        goto finish_db;
+    }
+
+    char idx_sql[1024];
+    snprintf(idx_sql, sizeof(idx_sql),
+             "CREATE INDEX IF NOT EXISTS \"%s_offsets_ts_idx\" "
+             "ON \"%s_offsets\"(timestamp_ms);", ctx->name_pattern, ctx->name_pattern);
+    sqlite3_exec(db, idx_sql, NULL, NULL, NULL);
 
     for(;;) {
         OffsetItem *item = (OffsetItem *)queue_pop(ctx->offsets_queue);
@@ -61,6 +108,16 @@ void *offsets_writer_thread(void *arg) {
         free(item->packet);
         free(item);
     }
+
+finish_db:
+    if (ins) sqlite3_finalize(ins);
+    if (db)  sqlite3_close(db);
+finish_dumper:
+    if (dumper) pcap_dump_close(dumper);
+finish_dead:
+    if (dead)   pcap_close(dead);
+finish:
+
     printf("Сохранение пакетов завершено успешно\n");
     pthread_exit(NULL);
 }

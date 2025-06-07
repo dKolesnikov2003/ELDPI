@@ -56,6 +56,9 @@ void *metadata_writer_thread(void *arg) {
         goto finish;
     }
 
+    sqlite3_exec(db, "PRAGMA journal_mode=WAL;", NULL, NULL, NULL);
+    sqlite3_exec(db, "PRAGMA synchronous=NORMAL;", NULL, NULL, NULL);
+
     char create_sql[512];
     snprintf(create_sql, sizeof(create_sql),
              "CREATE TABLE IF NOT EXISTS \"%s\" ("

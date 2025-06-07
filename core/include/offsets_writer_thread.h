@@ -9,7 +9,7 @@ struct PacketItem;
 struct CapThreadContext;
 
 typedef struct {
-    uint64_t timestamp_ms;
+    uint64_t timestamp_us;
     struct PacketItem *packet;
 } OffsetItem;
 

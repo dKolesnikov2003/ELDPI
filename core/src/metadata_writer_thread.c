@@ -63,7 +63,7 @@ void *metadata_writer_thread(void *arg) {
     snprintf(create_sql, sizeof(create_sql),
              "CREATE TABLE IF NOT EXISTS \"%s\" ("
              "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-             "timestamp_ms  INTEGER NOT NULL,"
+             "timestamp_us  INTEGER NOT NULL,"
              "session_id    INTEGER NOT NULL,"
              "ip_version    INTEGER NOT NULL,"
              "ip_src        TEXT    NOT NULL,"
@@ -81,7 +81,7 @@ void *metadata_writer_thread(void *arg) {
 
     char insert_sql[256];
     snprintf(insert_sql, sizeof(insert_sql),
-             "INSERT INTO \"%s\" (timestamp_ms, session_id, ip_version,"
+             "INSERT INTO \"%s\" (timestamp_us, session_id, ip_version,"
              "ip_src, ip_dst, src_port, dst_port, protocol_name)"
              "VALUES (?, ?, ?, ?, ?, ?, ?, ?);",
              ctx->name_pattern);
@@ -113,7 +113,7 @@ void *metadata_writer_thread(void *arg) {
             }
         }
 
-        sqlite3_bind_int64(ins, 1, (sqlite3_int64)item->timestamp_ms);
+        sqlite3_bind_int64(ins, 1, (sqlite3_int64)item->timestamp_us);
         sqlite3_bind_int64(ins, 2, (sqlite3_int64)item->session_id);
         sqlite3_bind_int  (ins, 3, item->ip_version);
 

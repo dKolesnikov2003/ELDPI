@@ -6,7 +6,7 @@
 #include "queue.h"
 
 typedef struct {
-    uint64_t timestamp_ms;
+    uint64_t timestamp_us;
     uint32_t session_id;
     uint8_t ip_version;
     union {

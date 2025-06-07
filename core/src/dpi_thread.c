@@ -284,6 +284,8 @@ void *dpi_thread(void *arg)
             dpi_ctx->ndpi_info->flow_table[index] = node;
         }
 
+        uint64_t ts_us = (uint64_t)item->header.ts.tv_sec * 1000000 +
+                                   item->header.ts.tv_usec;
         uint64_t   ts_ms   = (uint64_t)item->header.ts.tv_sec * 1000 +
                              item->header.ts.tv_usec / 1000;
         ndpi_protocol proto =
@@ -320,11 +322,11 @@ void *dpi_thread(void *arg)
             continue;
         }
 
-        offs_item->timestamp_ms = ts_ms;
+        offs_item->timestamp_us = ts_us;
         offs_item->packet       = item;
         queue_push(dpi_ctx->offsets_queue, offs_item);
 
-        meta->timestamp_ms  = ts_ms;
+        meta->timestamp_us  = ts_us;
         meta->session_id    = index;
         meta->ip_version    = key.ip_version;
         if (key.ip_version == 4)

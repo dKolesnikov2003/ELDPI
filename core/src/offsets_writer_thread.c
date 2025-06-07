@@ -79,7 +79,7 @@ void *offsets_writer_thread(void *arg) {
     char create_sql[1024];
     snprintf(create_sql, sizeof(create_sql),
         "CREATE TABLE IF NOT EXISTS \"%s\" ("
-        "timestamp_ms INTEGER PRIMARY KEY,"
+        "timestamp_us INTEGER PRIMARY KEY,"
         "file_offset  INTEGER NOT NULL,"
         "packet_len   INTEGER NOT NULL);",
         ctx->name_pattern);
@@ -93,8 +93,23 @@ void *offsets_writer_thread(void *arg) {
     char idx_sql[1024];
     snprintf(idx_sql, sizeof(idx_sql),
              "CREATE INDEX IF NOT EXISTS \"%s_offsets_ts_idx\" "
-             "ON \"%s_offsets\"(timestamp_ms);", ctx->name_pattern, ctx->name_pattern);
+             "ON \"%s\"(timestamp_us);", ctx->name_pattern, ctx->name_pattern);
     sqlite3_exec(db, idx_sql, NULL, NULL, NULL);
+
+    char insert_sql[512];
+    snprintf(insert_sql, sizeof(insert_sql),
+             "INSERT INTO \"%s\" "
+             "(timestamp_us, file_offset, packet_len) "
+             "VALUES (?, ?, ?);", ctx->name_pattern);
+    rc = sqlite3_prepare_v2(db, insert_sql, -1, &ins, NULL);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "prepare offsets INSERT: %s\n", sqlite3_errmsg(db));
+        goto finish_db;
+    }
+
+    int       batch_cnt = 0;
+    long long batch_ts  = 0;
+    int       in_tx     = 0;
 
     for(;;) {
         OffsetItem *item = (OffsetItem *)queue_pop(ctx->offsets_queue);
@@ -102,12 +117,50 @@ void *offsets_writer_thread(void *arg) {
             break;
         }
 
-        printf("offsets_writer_thread: Получен элемент с timestamp %lu\n", item->timestamp_ms);
-        printf("offsets_writer_thread: Получен пакет с длиной %d\n\n", item->packet->header.caplen);
+        long long fofs = ftello(dump_fp);
+        if (fofs < 0) fofs = 0; 
+        fofs += 16;
+        
+        pcap_dump((u_char *)dumper, &item->packet->header,
+                  item->packet->data);
+        uint32_t plen = item->packet->header.caplen;
+
+        if (!in_tx) {
+            sqlite3_exec(db, "BEGIN TRANSACTION;", NULL, NULL, NULL);
+            in_tx    = 1;
+            batch_ts = now_ms();
+        }
+
+        sqlite3_bind_int64(ins, 1, (sqlite3_int64)item->timestamp_us);
+        sqlite3_bind_int64(ins, 2, (sqlite3_int64)fofs);
+        sqlite3_bind_int  (ins, 3, plen);
+
+        rc = sqlite3_step(ins);
+        if (rc != SQLITE_DONE) {
+            fprintf(stderr, "INSERT offsets: %s\n", sqlite3_errmsg(db));
+        }
+        sqlite3_reset(ins);
+        batch_cnt++;
+
+        long long now = now_ms();
+        if (batch_cnt >= BATCH_MAX ||
+            (now - batch_ts) >= BATCH_MAX_MS)
+        {
+            if (in_tx) {
+                sqlite3_exec(db, "COMMIT;", NULL, NULL, NULL);
+                in_tx = 0;
+                batch_cnt = 0;
+            }
+            fflush(dump_fp);
+        }
 
         free(item->packet);
         free(item);
     }
+    
+    if (in_tx)
+        sqlite3_exec(db, "COMMIT;", NULL, NULL, NULL);
+    fflush(dump_fp);
 
 finish_db:
     if (ins) sqlite3_finalize(ins);

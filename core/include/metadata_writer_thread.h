@@ -3,13 +3,7 @@
 
 #include <netinet/in.h>
 #include <pthread.h>
-
-
 #include "queue.h"
-
-
-#define METADATA_BATCH_MAX 512
-#define METADATA_BATCH_MAX_MS 1000 
 
 typedef struct {
     uint64_t timestamp_ms;

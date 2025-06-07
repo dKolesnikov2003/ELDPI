@@ -139,8 +139,8 @@ void *metadata_writer_thread(void *arg) {
         batch_cnt++;
 
         long long now = now_ms();
-        if (batch_cnt >= METADATA_BATCH_MAX ||
-            (now - batch_ts) >= METADATA_BATCH_MAX_MS)
+        if (batch_cnt >= BATCH_MAX ||
+            (now - batch_ts) >= BATCH_MAX_MS)
         {
             if (in_tx) {
                 sqlite3_exec(db, "COMMIT;", NULL, NULL, NULL);

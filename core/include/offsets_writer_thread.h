@@ -6,21 +6,25 @@
 #include "queue.h"
 
 struct PacketItem;
+struct CapThreadContext;
 
 typedef struct {
     uint64_t timestamp_ms;
     struct PacketItem *packet;
 } OffsetItem;
 
-// typedef struct {
-//     pthread_t       tid;
-//     GenericQueue   *offset_queue;         /* очередь OffsetItem'ов      */
-//     const char     *name_pattern;         /* базовое имя файла/таблицы  */
-//     CapThreadContext *cap_ctx;            /* нужен datalink/snaplen     */
+typedef struct {
+    pthread_t       tid;
+    GenericQueue   *offsets_queue;
+    const char     *name_pattern; 
+    struct CapThreadContext *cap_ctx;
 
-//     /* ↓ ресурсы, подготавливаемые в init ↓ */
-//     char            pcap_path[PATH_MAX];  /* …/*.pcap                   */
-//     char            db_path[PATH_MAX];    /* …/metadata.db              */
-// } PacketWriterThreadContext;
+    char            pcap_path[128];
+    char            db_path[128];
+} OffsetsWriterThreadContext;
+
+int offsets_writer_thread_init(OffsetsWriterThreadContext *offsets_writer_ctx, GenericQueue *offsets_queue, const char *name_pattern);
+void *offsets_writer_thread(void *arg);
+void destroy_offsets_writer_context(OffsetsWriterThreadContext *offsets_writer_ctx);
 
 #endif // OFFSETS_WRITER_THREAD_H

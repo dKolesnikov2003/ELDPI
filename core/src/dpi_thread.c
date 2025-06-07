@@ -143,14 +143,12 @@ void *dpi_thread(void *arg)
         if (item == NULL) {
             break;
         }
-        /* ---- 1. Вычисляем EtherType с учётом VLAN ---- */
         uint16_t ethertype  = 0;
-        unsigned int offset = 14;              /* базовая длина Ethernet-II */
+        unsigned int offset = 14;
         if (item->header.caplen >= 14)
             memcpy(&ethertype, item->data + 12, sizeof ethertype);
         ethertype = ntohs(ethertype);
 
-        /* VLAN 802.1Q/802.1ad (может быть двойной) */
         for (int vlan_layers = 0;
              (ethertype == 0x8100 || ethertype == 0x88A8) && vlan_layers < 2;
              ++vlan_layers)
@@ -159,10 +157,9 @@ void *dpi_thread(void *arg)
                 break;
             memcpy(&ethertype, item->data + offset + 2, sizeof ethertype);
             ethertype = ntohs(ethertype);
-            offset   += 4;                    /* сдвиг на 802.1Q header       */
+            offset   += 4;
         }
 
-        /* ---- 2. Разбор IPv4 ------------------------------------------------ */
         FlowKey   key;
         memset(&key, 0, sizeof key);
         const u_char *l3_ptr = NULL;
@@ -172,7 +169,6 @@ void *dpi_thread(void *arg)
         {
             key.ip_version = 4;
 
-            /* Копируем ровно sizeof(struct iphdr) байт в выровненную переменную */
             struct iphdr ip;
             memcpy(&ip, item->data + offset, sizeof ip);
 
@@ -217,7 +213,6 @@ void *dpi_thread(void *arg)
             l3_ptr = item->data + offset;
             l3_len = item->header.caplen - offset;
         }
-        /* ---- 3. Разбор IPv6 ------------------------------------------------ */
         else if (ethertype == 0x86DD &&
                  item->header.caplen >= offset + sizeof(struct ip6_hdr))
         {
@@ -254,14 +249,12 @@ void *dpi_thread(void *arg)
             l3_ptr = item->data + offset;
             l3_len = item->header.caplen - offset;
         }
-        /* ---- 4. Неизвестный / неполный L3 ---------------------------------- */
         else
         {
             free(item);
             continue;
         }
 
-        /* ---- 5. Поиск/создание потока nDPI --------------------------------- */
         uint32_t  index = flow_hash(&key);
         FlowNode *node  = dpi_ctx->ndpi_info->flow_table[index];
         while (node && !flow_key_equal(&node->key, &key))
@@ -291,7 +284,6 @@ void *dpi_thread(void *arg)
             dpi_ctx->ndpi_info->flow_table[index] = node;
         }
 
-        /* ---- 6. Анализ пакета в nDPI --------------------------------------- */
         uint64_t   ts_ms   = (uint64_t)item->header.ts.tv_sec * 1000 +
                              item->header.ts.tv_usec / 1000;
         ndpi_protocol proto =
@@ -312,16 +304,24 @@ void *dpi_thread(void *arg)
                     : proto.proto.master_protocol);
         }
 
-        /* ---- 7. Формирование метаданных ----------------------------------- */
+        OffsetItem *offs_item = calloc(1, sizeof *item);
+        if (!offs_item) {
+            fprintf(stderr, "Поток %d: недостаточно памяти (OffsetItem)\n",
+                    dpi_ctx->thread_number);
+            free(item);
+            continue;
+        }
+
         MetadataItem *meta = calloc(1, sizeof *meta);
-        if (!meta)
-        {
+        if (!meta) {
             fprintf(stderr, "Поток %d: недостаточно памяти (MetadataItem)\n",
                     dpi_ctx->thread_number);
             free(item);
             continue;
         }
 
+        offs_item->timestamp_ms = ts_ms;
+        offs_item->packet       = item;
         queue_push(dpi_ctx->offsets_queue, item);
 
         meta->timestamp_ms  = ts_ms;

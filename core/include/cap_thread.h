@@ -13,7 +13,7 @@ typedef struct CapThreadContext {
     GenericQueue *queues;
 } CapThreadContext;
 
-typedef struct {
+typedef struct PacketItem {
     struct pcap_pkthdr header; 
     unsigned char data[];
 } PacketItem;

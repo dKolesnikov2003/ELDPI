@@ -23,7 +23,7 @@ typedef struct {
     char            db_path[128];
 } OffsetsWriterThreadContext;
 
-int offsets_writer_thread_init(OffsetsWriterThreadContext *offsets_writer_ctx, GenericQueue *offsets_queue, const char *name_pattern);
+int offsets_writer_thread_init(OffsetsWriterThreadContext *offsets_writer_ctx, GenericQueue *offsets_queue, const char *name_pattern, struct CapThreadContext *cap_ctx);
 void *offsets_writer_thread(void *arg);
 void destroy_offsets_writer_context(OffsetsWriterThreadContext *offsets_writer_ctx);
 

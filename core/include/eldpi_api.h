@@ -20,6 +20,7 @@ typedef struct {
     CapThreadContext *cap_ctx;
     DPIThreadContext *dpi_threads;
     MetadataWriterThreadContext *metadata_writer_ctx;
+    OffsetsWriterThreadContext *offsets_writer_ctx;
 } Contexts;
 
 Contexts *start_analysis(CapArgs *args);

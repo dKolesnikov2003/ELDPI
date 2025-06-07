@@ -103,25 +103,36 @@ Contexts *start_analysis(CapArgs *args) {
     ctx->dpi_threads = dpi_threads;
 
 
-    // Поток сохранения метаданных
+    // Потоки сохранения метаданных и "сырых" пакетов
     set_name_pattern(ctx);
     MetadataWriterThreadContext *metadata_writer_ctx = calloc(1, sizeof(MetadataWriterThreadContext));
     if (!metadata_writer_ctx) {
         perror("Ошибка выделения памяти для потока записи метаданных");
         return NULL;
     }
+    OffsetsWriterThreadContext *offsets_writer_ctx = calloc(1, sizeof(OffsetsWriterThreadContext));
+    if (!offsets_writer_ctx) {
+        perror("Ошибка выделения памяти для потока записи в файл");
+        return NULL;
+    }
     if (metadata_writer_thread_init(metadata_writer_ctx, metadata_queue, name_pattern) != 0) {
         fprintf(stderr, "Ошибка инициализации потока записи метаданных\n");
-        free(metadata_writer_ctx);
+        return NULL;
+    }
+    if( offsets_writer_thread_init(offsets_writer_ctx, offsets_queue, name_pattern, cap_ctx) != 0) {
+        fprintf(stderr, "Ошибка инициализации потока записи в файл\n");
         return NULL;
     }
     if(pthread_create(&metadata_writer_ctx->tid, NULL, metadata_writer_thread, metadata_writer_ctx)){
         perror("Ошибка при создании потока записи метаданных");
-            return NULL;
+        return NULL;
+    }
+    if(pthread_create(&offsets_writer_ctx->tid, NULL, offsets_writer_thread, offsets_writer_ctx)){
+        perror("Ошибка при создании потока записи в файл");
+        return NULL;
     }
     ctx->metadata_writer_ctx = metadata_writer_ctx;
-
-
+    ctx->offsets_writer_ctx = offsets_writer_ctx;
 
     return ctx;
 }
@@ -149,6 +160,12 @@ void terminate_analysis(Contexts *ctx) {
         ctx->metadata_writer_ctx = NULL;
     }
     
+    pthread_join(ctx->offsets_writer_ctx->tid, NULL);
+    destroy_offsets_writer_context(ctx->offsets_writer_ctx);
+    if (ctx->offsets_writer_ctx != NULL) {
+        free(ctx->offsets_writer_ctx);
+        ctx->offsets_writer_ctx = NULL;
+    }
 
     destroy_cap_context(ctx->cap_ctx);
     if (ctx->cap_ctx != NULL) {

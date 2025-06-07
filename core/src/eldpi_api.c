@@ -13,9 +13,9 @@
 #include "cap_thread.h"
 #include "queue.h"
 #include "dpi_thread.h"
+#include "utils.h"
 
 
-char name_pattern[128];
 
 static void set_name_pattern(Contexts *ctx) {
     time_t now = time(NULL);

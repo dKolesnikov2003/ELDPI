@@ -16,30 +16,7 @@
 #include "common.h"
 #include "queue.h"
 #include "eldpi_api.h"
-
-
-static long long now_ms(void)
-{
-    struct timespec ts;
-    clock_gettime(CLOCK_REALTIME, &ts);
-    return (long long)ts.tv_sec * 1000LL + ts.tv_nsec / 1000000LL;
-}
-
-static int ensure_dir_exists(const char *dir)
-{
-    if (!dir || !*dir) return -1;
-    char tmp[128];
-    snprintf(tmp, sizeof(tmp), "%s", dir);
-
-    for (char *p = tmp + 1; *p; ++p) {
-        if (*p == '/') {
-            *p = '\0';
-            if (mkdir(tmp, 0755) && errno != EEXIST) return -1;
-            *p = '/';
-        }
-    }
-    return (mkdir(tmp, 0755) && errno != EEXIST) ? -1 : 0;
-}
+#include "utils.h"
 
 int metadata_writer_thread_init(MetadataWriterThreadContext *ctx,
                                 GenericQueue *metadata_queue,

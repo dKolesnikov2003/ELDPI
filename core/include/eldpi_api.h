@@ -5,8 +5,6 @@
 #include "metadata_writer_thread.h"
 #include "offsets_writer_thread.h"
 
-extern char name_pattern[128];
-
 typedef struct CapThreadContext CapThreadContext;
 
 typedef enum { CAP_SRC_FILE = 0, CAP_SRC_IFACE = 1 } CapSrc;

@@ -77,6 +77,9 @@ void MainWindow::setupUi()
     QStringList headers;
     headers << "timestamp" << "session" << "ip_ver" << "ip_src" << "ip_dst" << "src_port" << "dst_port" << "protocol";
     tree->setHeaderLabels(headers);
+    tree->setAlternatingRowColors(true);
+    tree->setSortingEnabled(true);
+    tree->setStyleSheet("QTreeView::item { border-bottom: 1px solid #dcdcdc; }");
     connect(tree, &QTreeWidget::itemDoubleClicked, this, &MainWindow::onPacketDoubleClicked);
 
     packetView = new QPlainTextEdit(this);

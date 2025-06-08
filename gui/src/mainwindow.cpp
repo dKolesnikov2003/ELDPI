@@ -4,7 +4,9 @@
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 #include <QSplitter>
-#include <QPlainTextEdit>
+#include <QTableWidget>
+#include <QHeaderView>
+#include <QFontDatabase>
 #include <QLineEdit>
 #include <QComboBox>
 #include <QCheckBox>
@@ -82,8 +84,13 @@ void MainWindow::setupUi()
     tree->setStyleSheet("QTreeView::item { border-bottom: 1px solid #dcdcdc; }");
     connect(tree, &QTreeWidget::itemDoubleClicked, this, &MainWindow::onPacketDoubleClicked);
 
-    packetView = new QPlainTextEdit(this);
-    packetView->setReadOnly(true);
+    packetView = new QTableWidget(this);
+    packetView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    packetView->setSelectionMode(QAbstractItemView::NoSelection);
+    packetView->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
+    packetView->verticalHeader()->setDefaultAlignment(Qt::AlignRight|Qt::AlignVCenter);
+    QFont mono = QFontDatabase::systemFont(QFontDatabase::FixedFont);
+    packetView->setFont(mono);
 
     QSplitter *split = new QSplitter(this);
     split->addWidget(tree);
@@ -247,31 +254,47 @@ void MainWindow::onPacketDoubleClicked(QTreeWidgetItem *item, int)
     qulonglong ts = item->data(0, Qt::UserRole).toULongLong();
     QByteArray data = readPacket(ts);
     if(data.isEmpty()) return;
-    QString dump;
     const int bytesPerLine = 16;
-    for(int i = 0; i < data.size(); i += bytesPerLine) {
-        dump += QString("%1  ").arg(i, 8, 16, QChar('0'));
+    int rows = (data.size() + bytesPerLine - 1) / bytesPerLine;
+    packetView->clear();
+    packetView->setColumnCount(bytesPerLine + 1);
+    packetView->setRowCount(rows);
+
+    QStringList headers;
+    for(int i = 0; i < bytesPerLine; ++i)
+        headers << QString("%1").arg(i, 2, 16, QChar('0')).toUpper();
+    headers << "ASCII";
+    packetView->setHorizontalHeaderLabels(headers);
+
+    for(int row = 0; row < rows; ++row) {
+        int offset = row * bytesPerLine;
+        QTableWidgetItem *vh = new QTableWidgetItem(QString("%1").arg(offset, 8, 16, QChar('0')).toUpper());
+        vh->setForeground(QBrush(Qt::darkGray));
+        packetView->setVerticalHeaderItem(row, vh);
+
         QString ascii;
-        for(int j = 0; j < bytesPerLine; ++j) {
-            int idx = i + j;
+        for(int col = 0; col < bytesPerLine; ++col) {
+            int idx = offset + col;
+            QTableWidgetItem *cell = new QTableWidgetItem;
+            cell->setTextAlignment(Qt::AlignCenter);
             if(idx < data.size()) {
                 unsigned char b = static_cast<unsigned char>(data[idx]);
-                dump += QString("%1 ").arg(b, 2, 16, QChar('0'));
-                if(j == 7)
-                    dump += " ";
+                cell->setText(QString("%1").arg(b, 2, 16, QChar('0')).toUpper());
                 ascii += (b >= 32 && b <= 126) ? QChar(b) : QChar('.');
             } else {
-                dump += "   ";
-                if(j == 7)
-                    dump += " ";
+                cell->setText("  ");
                 ascii += ' ';
             }
+            packetView->setItem(row, col, cell);
         }
-        dump += " " + ascii;
-        if(i + bytesPerLine < data.size())
-            dump += '\n';
+        QTableWidgetItem *asciiItem = new QTableWidgetItem(ascii);
+        asciiItem->setForeground(QBrush(Qt::blue));
+        packetView->setItem(row, bytesPerLine, asciiItem);
     }
-    packetView->setPlainText(dump.toUpper());
+
+    for(int c = 0; c < bytesPerLine; ++c)
+        packetView->setColumnWidth(c, 30);
+    packetView->setColumnWidth(bytesPerLine, 120);
 }
 
 void MainWindow::startCapture()

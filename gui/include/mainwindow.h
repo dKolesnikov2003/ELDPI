@@ -13,7 +13,7 @@ class QTreeWidgetItem;
 class QLineEdit;
 class QComboBox;
 class QCheckBox;
-class QPlainTextEdit;
+class QTableWidget;
 class QLabel;
 class QPushButton;
 class CaptureWorker;
@@ -43,7 +43,7 @@ private:
     QSqlDatabase offsetsDb;
 
     QTreeWidget *tree;
-    QPlainTextEdit *packetView;
+    QTableWidget *packetView;
     QLineEdit *ipEdit;
     QLineEdit *portEdit;
     QLineEdit *protoEdit;

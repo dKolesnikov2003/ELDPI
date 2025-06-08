@@ -77,6 +77,9 @@ void MainWindow::setupUi()
     QStringList headers;
     headers << "timestamp" << "session" << "ip_ver" << "ip_src" << "ip_dst" << "src_port" << "dst_port" << "protocol";
     tree->setHeaderLabels(headers);
+    tree->setAlternatingRowColors(true);
+    tree->setSortingEnabled(true);
+    tree->setStyleSheet("QTreeView::item { border-bottom: 1px solid #dcdcdc; }");
     connect(tree, &QTreeWidget::itemDoubleClicked, this, &MainWindow::onPacketDoubleClicked);
 
     packetView = new QPlainTextEdit(this);
@@ -244,12 +247,31 @@ void MainWindow::onPacketDoubleClicked(QTreeWidgetItem *item, int)
     qulonglong ts = item->data(0, Qt::UserRole).toULongLong();
     QByteArray data = readPacket(ts);
     if(data.isEmpty()) return;
-    QString hex;
-    for(int i=0;i<data.size();++i){
-        hex += QString("%1 ").arg((unsigned char)data[i],2,16,QChar('0'));
-        if(i%16==15) hex += "\n";
+    QString dump;
+    const int bytesPerLine = 16;
+    for(int i = 0; i < data.size(); i += bytesPerLine) {
+        dump += QString("%1  ").arg(i, 8, 16, QChar('0'));
+        QString ascii;
+        for(int j = 0; j < bytesPerLine; ++j) {
+            int idx = i + j;
+            if(idx < data.size()) {
+                unsigned char b = static_cast<unsigned char>(data[idx]);
+                dump += QString("%1 ").arg(b, 2, 16, QChar('0'));
+                if(j == 7)
+                    dump += " ";
+                ascii += (b >= 32 && b <= 126) ? QChar(b) : QChar('.');
+            } else {
+                dump += "   ";
+                if(j == 7)
+                    dump += " ";
+                ascii += ' ';
+            }
+        }
+        dump += " " + ascii;
+        if(i + bytesPerLine < data.size())
+            dump += '\n';
     }
-    packetView->setPlainText(hex);
+    packetView->setPlainText(dump.toUpper());
 }
 
 void MainWindow::startCapture()

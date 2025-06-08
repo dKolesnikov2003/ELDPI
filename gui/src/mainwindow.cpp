@@ -320,7 +320,9 @@ void MainWindow::onPacketDoubleClicked(QTreeWidgetItem *item, int)
 
     for(int c = 0; c < bytesPerLine; ++c)
         packetView->setColumnWidth(c, 30);
-    packetView->setColumnWidth(bytesPerLine, 120);
+   auto *h = packetView->horizontalHeader();
+    h->setSectionResizeMode(bytesPerLine, QHeaderView::Stretch); // конкретно эта секция
+    h->setStretchLastSection(true);
     
 }
 

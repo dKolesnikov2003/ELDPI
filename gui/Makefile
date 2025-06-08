@@ -56,5 +56,6 @@ $(LIBCORE):
 debug:
 	$(MAKE) BUILD=debug
 
-	clean:
+clean:
 	rm -rf obj ELDPI-GUI ELDPI-GUI_debug
+

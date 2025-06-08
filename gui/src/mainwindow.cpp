@@ -21,6 +21,7 @@
 #include <QDateTime>
 #include <QMessageBox>
 #include <QMovie>
+#include <QFontDatabase> 
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), worker(nullptr)
@@ -33,6 +34,9 @@ MainWindow::MainWindow(QWidget *parent)
     offsetsDb.setDatabaseName(dataDir + "/offsets.db");
     offsetsDb.open();
     setupUi();
+    QFont mono = QFontDatabase::systemFont(QFontDatabase::FixedFont);
+    mono.setPointSize(mono.pointSize() + 2);
+    packetView->setFont(mono); 
     populateAnalysisList();
 }
 

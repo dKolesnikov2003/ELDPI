@@ -86,7 +86,8 @@ void MainWindow::setupUi()
 
     packetView = new QTableWidget(this);
     packetView->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    packetView->setSelectionMode(QAbstractItemView::NoSelection);
+    packetView->setSelectionMode(QAbstractItemView::SingleSelection);
+    packetView->setSelectionBehavior(QAbstractItemView::SelectRows);
     packetView->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
     packetView->verticalHeader()->setDefaultAlignment(Qt::AlignRight|Qt::AlignVCenter);
     QFont mono = QFontDatabase::systemFont(QFontDatabase::FixedFont);
@@ -96,8 +97,8 @@ void MainWindow::setupUi()
     QSplitter *split = new QSplitter(this);
     split->addWidget(tree);
     split->addWidget(packetView);
-    split->setStretchFactor(0,3);
-    split->setStretchFactor(1,2);
+    split->setStretchFactor(0,2);
+    split->setStretchFactor(1,1);
 
     // Bottom controls
     sourceTypeCombo = new QComboBox(this);
@@ -299,6 +300,7 @@ void MainWindow::onPacketDoubleClicked(QTreeWidgetItem *item, int)
     for(int c = 0; c < bytesPerLine; ++c)
         packetView->setColumnWidth(c, 30);
     packetView->setColumnWidth(bytesPerLine, 120);
+    
 }
 
 void MainWindow::startCapture()

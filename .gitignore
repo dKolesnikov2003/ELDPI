@@ -3,11 +3,15 @@
 
 eldpi
 ELDPI
+ELDPI-CLI
+eldpi-cli
+ELDPI-CLI_debug
+eldpi-cli_debug
 libeldpi
 libeldpi_debug
 libeldpi.a
 libeldpi_debug.a
-main.c
+
 
 obj/
 **/obj/

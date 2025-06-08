@@ -24,10 +24,10 @@ ifeq ($(BUILD),debug)
   CFLAGS := $(filter-out -O%,$(CFLAGS_BASE)) $(DEBUG_FLAGS) $(SANITIZE_FLAGS)
   LDFLAGS := $(LDFLAGS_BASE) $(SANITIZE_FLAGS)
   OBJDIR := obj/debug
-  TARGET := libeldpi_debug
+  TARGET := libeldpi_debug.a
 else
   OBJDIR ?= obj
-  TARGET ?= libeldpi
+  TARGET ?= libeldpi.a
 endif
 
 # --- Пути, файлы -------------------------------------------------------------
@@ -47,12 +47,12 @@ all: $(TARGET)
 debug:
 	$(MAKE) BUILD=debug
 
-$(TARGET): $(OBJ)
-	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 # $(TARGET): $(OBJ)
-# 	@mkdir -p /var/lib/eldpi/
-# 	$(AR) rcs $@ $^
-# Линковка
+# 	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
+
+$(TARGET): $(OBJ)
+	@mkdir -p /var/lib/eldpi/
+	$(AR) rcs $@ $^
 
 # Компиляция объектов
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
@@ -61,4 +61,4 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.c
 
 # Очистка
 clean:
-	rm -rf obj $(TARGET) libeldpi_debug
+	rm -rf obj $(TARGET) libeldpi_debug.a

@@ -24,3 +24,5 @@ data/
 *.sqlite3
 *.pcap
 
+ELDPI-GUI
+ELDPI-GUI_debug

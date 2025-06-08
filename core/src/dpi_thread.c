@@ -28,20 +28,41 @@ typedef struct FlowNode {
 // Функция вычисления хеша по ключу потока (FlowKey)
 static inline uint32_t flow_hash(const FlowKey *key) {
     uint64_t hash64 = 0;
-    if(key->ip_version == 4) {
-        // Для IPv4: суммируем адреса, порты и протокол
-        hash64 = key->ip.v4.src_ip;
-        hash64 += key->ip.v4.dst_ip;
-        hash64 += (uint64_t)key->src_port << 16 | key->dst_port;
+    if (key->ip_version == 4) {
+        uint32_t ip1 = key->ip.v4.src_ip;
+        uint32_t ip2 = key->ip.v4.dst_ip;
+        uint16_t port1 = key->src_port;
+        uint16_t port2 = key->dst_port;
+
+        uint32_t ip_min = ip1 ^ ((ip1 ^ ip2) & -(ip1 > ip2));
+        uint32_t ip_max = ip2 ^ ((ip1 ^ ip2) & -(ip1 > ip2));
+
+        uint16_t port_min = port1 ^ ((port1 ^ port2) & -(port1 > port2));
+        uint16_t port_max = port2 ^ ((port1 ^ port2) & -(port1 > port2));
+
+        hash64 = ip_min ^ ip_max;
+        hash64 += ((uint64_t)port_min << 16) | port_max;
         hash64 += key->proto;
-    } else if(key->ip_version == 6) {
-        // Для IPv6: суммируем части адресов, порты и протокол
-        hash64 = key->ip.v6.src_ip[0] ^ key->ip.v6.src_ip[1];
-        hash64 ^= key->ip.v6.dst_ip[0] ^ key->ip.v6.dst_ip[1];
-        hash64 += ((uint64_t)key->src_port << 16) | key->dst_port;
+
+    } else if (key->ip_version == 6) {
+        uint64_t s0 = key->ip.v6.src_ip[0];
+        uint64_t s1 = key->ip.v6.src_ip[1];
+        uint64_t d0 = key->ip.v6.dst_ip[0];
+        uint64_t d1 = key->ip.v6.dst_ip[1];
+
+        uint64_t lo0 = s0 ^ ((s0 ^ d0) & -(s0 > d0));
+        uint64_t hi0 = d0 ^ ((s0 ^ d0) & -(s0 > d0));
+        uint64_t lo1 = s1 ^ ((s1 ^ d1) & -(s1 > d1));
+        uint64_t hi1 = d1 ^ ((s1 ^ d1) & -(s1 > d1));
+
+        uint16_t port_min = key->src_port ^ ((key->src_port ^ key->dst_port) & -(key->src_port > key->dst_port));
+        uint16_t port_max = key->dst_port ^ ((key->src_port ^ key->dst_port) & -(key->src_port > key->dst_port));
+
+        hash64 = lo0 ^ hi0 ^ lo1 ^ hi1;
+        hash64 += ((uint64_t)port_min << 16) | port_max;
         hash64 += key->proto;
     }
-    // Преобразуем 64-битный хеш в 32-битный индекс
+
     uint32_t hash32 = (uint32_t)(hash64 ^ (hash64 >> 32));
     return hash32 & (FLOW_HASH_SIZE - 1);
 }

@@ -60,17 +60,22 @@ void MainWindow::setupUi()
     protoEdit = new QLineEdit(this);
     protoEdit->setPlaceholderText(tr("Protocol"));
     analysisCombo = new QComboBox(this);
+    connect(analysisCombo, &QComboBox::currentTextChanged,
+            this, &MainWindow::loadTable);
     sessionCheck = new QCheckBox(tr("Group by session"), this);
+    connect(sessionCheck, &QCheckBox::toggled,
+            this, &MainWindow::fillTree);
 
     QPushButton *applyButton = new QPushButton(tr("Apply"), this);
     connect(applyButton, &QPushButton::clicked, this, &MainWindow::applyFilters);
 
     QHBoxLayout *topLayout = new QHBoxLayout;
+    // move data source selection and session checkbox to the beginning
+    topLayout->addWidget(analysisCombo);
+    topLayout->addWidget(sessionCheck);
     topLayout->addWidget(ipEdit);
     topLayout->addWidget(portEdit);
     topLayout->addWidget(protoEdit);
-    topLayout->addWidget(analysisCombo);
-    topLayout->addWidget(sessionCheck);
     topLayout->addWidget(applyButton);
 
     // Tree and packet view
@@ -81,7 +86,10 @@ void MainWindow::setupUi()
     tree->setHeaderLabels(headers);
     tree->setAlternatingRowColors(true);
     tree->setSortingEnabled(true);
-    tree->setStyleSheet("QTreeView::item { border-bottom: 1px solid #dcdcdc; }");
+    tree->setStyleSheet(
+                "QTreeView::item { border-bottom: 1px solid #dcdcdc; }"
+                "QTreeView::item:selected { background:#87cefa; color:black; }"
+                "QTreeView::branch:selected { background:#87cefa; }");
     connect(tree, &QTreeWidget::itemDoubleClicked, this, &MainWindow::onPacketDoubleClicked);
 
     packetView = new QTableWidget(this);
@@ -190,6 +198,7 @@ void MainWindow::fillTree()
 
     bool group = sessionCheck->isChecked();
     if(group) {
+        int colorIndex = 0;
         for(auto it = sessions.begin(); it != sessions.end(); ++it) {
             qulonglong sessionId = it.key();
             QList<Packet> packets = it.value();
@@ -198,9 +207,17 @@ void MainWindow::fillTree()
             for(auto pit = protoCount[sessionId].begin(); pit != protoCount[sessionId].end(); ++pit) {
                 if(pit.value() > maxCnt) { maxCnt = pit.value(); proto = pit.key(); }
             }
+            QColor base = QColor::fromHsv((colorIndex * 45) % 360, 80, 230);
+            QColor child = base.lighter(150);
             QTreeWidgetItem *sessionItem = new QTreeWidgetItem(tree);
             sessionItem->setText(0, QString("session %1").arg(sessionId));
             sessionItem->setText(7, proto);
+            for(int c=0; c<tree->columnCount(); ++c){
+                sessionItem->setBackground(c, QBrush(base));
+                QFont f = sessionItem->font(c);
+                f.setBold(true);
+                sessionItem->setFont(c, f);
+            }
             for(const Packet &p : packets) {
                 QTreeWidgetItem *item = new QTreeWidgetItem(sessionItem);
                 item->setText(0, QString::number(p.ts));
@@ -212,7 +229,10 @@ void MainWindow::fillTree()
                 item->setText(6, QString::number(p.dport));
                 item->setText(7, p.proto);
                 item->setData(0, Qt::UserRole, QVariant::fromValue(p.ts));
+                for(int c=0;c<tree->columnCount();++c)
+                    item->setBackground(c, QBrush(child));
             }
+            colorIndex++;
         }
     } else {
         for(auto it = sessions.begin(); it != sessions.end(); ++it) {

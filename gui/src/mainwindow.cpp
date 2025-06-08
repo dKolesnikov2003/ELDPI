@@ -90,6 +90,7 @@ void MainWindow::setupUi()
     packetView->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
     packetView->verticalHeader()->setDefaultAlignment(Qt::AlignRight|Qt::AlignVCenter);
     QFont mono = QFontDatabase::systemFont(QFontDatabase::FixedFont);
+    mono.setPointSize(mono.pointSize() + 2);
     packetView->setFont(mono);
 
     QSplitter *split = new QSplitter(this);
@@ -260,11 +261,14 @@ void MainWindow::onPacketDoubleClicked(QTreeWidgetItem *item, int)
     packetView->setColumnCount(bytesPerLine + 1);
     packetView->setRowCount(rows);
 
-    QStringList headers;
-    for(int i = 0; i < bytesPerLine; ++i)
-        headers << QString("%1").arg(i, 2, 16, QChar('0')).toUpper();
-    headers << "ASCII";
-    packetView->setHorizontalHeaderLabels(headers);
+    for(int i = 0; i < bytesPerLine; ++i){
+        QTableWidgetItem *hh = new QTableWidgetItem(QString("%1").arg(i, 2, 16, QChar('0')).toUpper());
+        hh->setForeground(QBrush(Qt::darkGray));
+        packetView->setHorizontalHeaderItem(i, hh);
+    }
+    QTableWidgetItem *asciiHeader = new QTableWidgetItem("ASCII");
+    asciiHeader->setForeground(QBrush(Qt::darkGray));
+    packetView->setHorizontalHeaderItem(bytesPerLine, asciiHeader);
 
     for(int row = 0; row < rows; ++row) {
         int offset = row * bytesPerLine;

@@ -4,7 +4,7 @@
 #include "eldpi_api.h"
 
 
-int parse_args(int argc, char **argv, CapArgs *opt) {
+int parse_args(int argc, char **argv, CapArgs *opt, char *date_time) {
     memset(opt, 0, sizeof(*opt));
     opt->source_type = -1;
 
@@ -32,7 +32,6 @@ int parse_args(int argc, char **argv, CapArgs *opt) {
 
     time_t now;
     struct tm *tm_info;
-    char date_time[20];
     time(&now);
     tm_info = localtime(&now);
     strftime(date_time, sizeof(date_time), "%Y-%m-%d %H:%M:%S", tm_info);
@@ -45,13 +44,17 @@ int parse_args(int argc, char **argv, CapArgs *opt) {
 int main(int argc, char *argv[]){
     CapArgs *params = calloc(1, sizeof(CapArgs));
 
-    if (parse_args(argc, argv, params) != 0) {
+    char *date_time = calloc(20, sizeof(char));
+
+    if (parse_args(argc, argv, params, date_time) != 0) {
+        free(date_time);
         free(params);
         return 1;
     }
     Contexts *ctx = start_analysis(params);
     if(ctx == NULL) {
         fprintf(stderr, "Ошибка при запуске анализа\n");
+        free(date_time);
         free(params);
         return 1;
     }
@@ -66,6 +69,7 @@ int main(int argc, char *argv[]){
         stop_analysis(ctx);
     } else wait_analysis(ctx);
     destroy_analysis_context(ctx);
+    free(date_time);
     free(params);
     return 0;
 }

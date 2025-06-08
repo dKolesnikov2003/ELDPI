@@ -299,6 +299,13 @@ void MainWindow::onPacketDoubleClicked(QTreeWidgetItem *item, int)
     for(int c = 0; c < bytesPerLine; ++c)
         packetView->setColumnWidth(c, 30);
     packetView->setColumnWidth(bytesPerLine, 120);
+
+    int totalWidth = packetView->verticalHeader()->width();
+    for(int c = 0; c <= bytesPerLine; ++c)
+        totalWidth += packetView->columnWidth(c);
+    totalWidth += packetView->frameWidth() * 2;
+    packetView->setMinimumWidth(totalWidth);
+    packetView->setMaximumWidth(totalWidth);
 }
 
 void MainWindow::startCapture()

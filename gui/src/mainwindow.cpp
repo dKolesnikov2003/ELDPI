@@ -86,10 +86,7 @@ void MainWindow::setupUi()
     tree->setHeaderLabels(headers);
     tree->setAlternatingRowColors(true);
     tree->setSortingEnabled(true);
-    tree->setStyleSheet(
-                "QTreeView::item { border-bottom: 1px solid #dcdcdc; }"
-                "QTreeView::item:selected { background:#87cefa; color:black; }"
-                "QTreeView::branch:selected { background:#87cefa; }");
+    // tree->setStyleSheet();
     connect(tree, &QTreeWidget::itemDoubleClicked, this, &MainWindow::onPacketDoubleClicked);
 
     packetView = new QTableWidget(this);

@@ -60,17 +60,17 @@ void MainWindow::setupUi()
     ipEdit = new QLineEdit(this);
     ipEdit->setPlaceholderText(tr("IP"));
     portEdit = new QLineEdit(this);
-    portEdit->setPlaceholderText(tr("Port"));
+    portEdit->setPlaceholderText(tr("Порт"));
     protoEdit = new QLineEdit(this);
-    protoEdit->setPlaceholderText(tr("Protocol"));
+    protoEdit->setPlaceholderText(tr("Протокол"));
     analysisCombo = new QComboBox(this);
     connect(analysisCombo, &QComboBox::currentTextChanged,
             this, &MainWindow::loadTable);
-    sessionCheck = new QCheckBox(tr("Group by session"), this);
+    sessionCheck = new QCheckBox(tr("Группировать по сессии"), this);
     connect(sessionCheck, &QCheckBox::toggled,
             this, &MainWindow::fillTree);
 
-    QPushButton *applyButton = new QPushButton(tr("Apply"), this);
+    QPushButton *applyButton = new QPushButton(tr("Применить"), this);
     connect(applyButton, &QPushButton::clicked, this, &MainWindow::applyFilters);
 
     QHBoxLayout *topLayout = new QHBoxLayout;
@@ -86,7 +86,7 @@ void MainWindow::setupUi()
     tree = new QTreeWidget(this);
     tree->setColumnCount(8);
     QStringList headers;
-    headers << "timestamp" << "session" << "ip_ver" << "ip_src" << "ip_dst" << "src_port" << "dst_port" << "protocol";
+    headers << "время" << "сессия" << "ip_версия" << "ip_src" << "ip_dst" << "порт_источника" << "порт_назначения" << "протокол";
     tree->setHeaderLabels(headers);
     tree->setAlternatingRowColors(true);
     tree->setSortingEnabled(true);
@@ -111,13 +111,13 @@ void MainWindow::setupUi()
 
     // Bottom controls
     sourceTypeCombo = new QComboBox(this);
-    sourceTypeCombo->addItem(tr("File"), CAP_SRC_FILE);
-    sourceTypeCombo->addItem(tr("Interface"), CAP_SRC_IFACE);
+    sourceTypeCombo->addItem(tr("Файл"), CAP_SRC_FILE);
+    sourceTypeCombo->addItem(tr("Интерфейс"), CAP_SRC_IFACE);
     sourceEdit = new QLineEdit(this);
     bpfEdit = new QLineEdit(this);
-    bpfEdit->setPlaceholderText(tr("BPF filter"));
-    startButton = new QPushButton(tr("Start"), this);
-    stopButton = new QPushButton(tr("Stop"), this);
+    bpfEdit->setPlaceholderText(tr("Фильтр BPF"));
+    startButton = new QPushButton(tr("Начать"), this);
+    stopButton = new QPushButton(tr("Остановить"), this);
     stopButton->setEnabled(false);
 
     connect(startButton, &QPushButton::clicked, this, &MainWindow::startCapture);
@@ -211,7 +211,7 @@ void MainWindow::fillTree()
             QColor base = QColor::fromHsv((colorIndex * 45) % 360, 80, 230);
             QColor child = base.lighter(150);
             QTreeWidgetItem *sessionItem = new QTreeWidgetItem(tree);
-            sessionItem->setText(0, QString("session %1").arg(sessionId));
+            sessionItem->setText(0, QString("сессия %1").arg(sessionId));
             sessionItem->setText(7, proto);
             for(int c=0; c<tree->columnCount(); ++c){
                 sessionItem->setBackground(c, QBrush(base));
@@ -329,7 +329,7 @@ void MainWindow::onPacketDoubleClicked(QTreeWidgetItem *item, int)
 void MainWindow::startCapture()
 {
     if(worker) {
-        QMessageBox::warning(this, tr("Capture"), tr("Capture already running"));
+        QMessageBox::warning(this, tr("Захват"), tr("Захват уже запущен"));
         return;
     }
     worker = new CaptureWorker(this);

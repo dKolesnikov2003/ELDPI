@@ -21,6 +21,7 @@
 #include <QDateTime>
 #include <QMessageBox>
 #include <QMovie>
+#include <QFontDatabase> 
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), worker(nullptr)
@@ -33,6 +34,9 @@ MainWindow::MainWindow(QWidget *parent)
     offsetsDb.setDatabaseName(dataDir + "/offsets.db");
     offsetsDb.open();
     setupUi();
+    QFont mono = QFontDatabase::systemFont(QFontDatabase::FixedFont);
+    mono.setPointSize(mono.pointSize() + 2);
+    packetView->setFont(mono); 
     populateAnalysisList();
 }
 
@@ -56,17 +60,17 @@ void MainWindow::setupUi()
     ipEdit = new QLineEdit(this);
     ipEdit->setPlaceholderText(tr("IP"));
     portEdit = new QLineEdit(this);
-    portEdit->setPlaceholderText(tr("Port"));
+    portEdit->setPlaceholderText(tr("Порт"));
     protoEdit = new QLineEdit(this);
-    protoEdit->setPlaceholderText(tr("Protocol"));
+    protoEdit->setPlaceholderText(tr("Протокол"));
     analysisCombo = new QComboBox(this);
     connect(analysisCombo, &QComboBox::currentTextChanged,
             this, &MainWindow::loadTable);
-    sessionCheck = new QCheckBox(tr("Group by session"), this);
+    sessionCheck = new QCheckBox(tr("Группировать по сессии"), this);
     connect(sessionCheck, &QCheckBox::toggled,
             this, &MainWindow::fillTree);
 
-    QPushButton *applyButton = new QPushButton(tr("Apply"), this);
+    QPushButton *applyButton = new QPushButton(tr("Применить"), this);
     connect(applyButton, &QPushButton::clicked, this, &MainWindow::applyFilters);
 
     QHBoxLayout *topLayout = new QHBoxLayout;
@@ -82,14 +86,21 @@ void MainWindow::setupUi()
     tree = new QTreeWidget(this);
     tree->setColumnCount(8);
     QStringList headers;
-    headers << "timestamp" << "session" << "ip_ver" << "ip_src" << "ip_dst" << "src_port" << "dst_port" << "protocol";
+    headers << "Время" << "Сессия" << "Версия IP" << "IP источника" << "IP назначения" << "Порт источника" << "Порт назначения" << "Протокол/Приложение";
     tree->setHeaderLabels(headers);
+    // Make metadata columns wider by default for better readability
+    QHeaderView *treeHeader = tree->header();
+    treeHeader->resizeSection(0, 300); // Time
+    treeHeader->resizeSection(1, 100);  // Session
+    treeHeader->resizeSection(2, 100);  // IP version
+    treeHeader->resizeSection(3, 250); // Source IP
+    treeHeader->resizeSection(4, 250); // Destination IP
+    treeHeader->resizeSection(5, 160); // Source port
+    treeHeader->resizeSection(6, 160); // Destination port
+    treeHeader->resizeSection(7, 160); // Protocol
     tree->setAlternatingRowColors(true);
     tree->setSortingEnabled(true);
-    tree->setStyleSheet(
-                "QTreeView::item { border-bottom: 1px solid #dcdcdc; }"
-                "QTreeView::item:selected { background:#87cefa; color:black; }"
-                "QTreeView::branch:selected { background:#87cefa; }");
+    // tree->setStyleSheet();
     connect(tree, &QTreeWidget::itemDoubleClicked, this, &MainWindow::onPacketDoubleClicked);
 
     packetView = new QTableWidget(this);
@@ -110,13 +121,13 @@ void MainWindow::setupUi()
 
     // Bottom controls
     sourceTypeCombo = new QComboBox(this);
-    sourceTypeCombo->addItem(tr("File"), CAP_SRC_FILE);
-    sourceTypeCombo->addItem(tr("Interface"), CAP_SRC_IFACE);
+    sourceTypeCombo->addItem(tr("Файл"), CAP_SRC_FILE);
+    sourceTypeCombo->addItem(tr("Интерфейс"), CAP_SRC_IFACE);
     sourceEdit = new QLineEdit(this);
     bpfEdit = new QLineEdit(this);
-    bpfEdit->setPlaceholderText(tr("BPF filter"));
-    startButton = new QPushButton(tr("Start"), this);
-    stopButton = new QPushButton(tr("Stop"), this);
+    bpfEdit->setPlaceholderText(tr("Фильтр BPF"));
+    startButton = new QPushButton(tr("Начать"), this);
+    stopButton = new QPushButton(tr("Остановить"), this);
     stopButton->setEnabled(false);
 
     connect(startButton, &QPushButton::clicked, this, &MainWindow::startCapture);
@@ -149,8 +160,10 @@ void MainWindow::populateAnalysisList()
         QString name = q.value(0).toString();
         analysisCombo->addItem(name);
     }
-    if(analysisCombo->count())
+    if(analysisCombo->count()) {
+        analysisCombo->setCurrentIndex(analysisCombo->count()-1);
         loadTable();
+    }
 }
 
 void MainWindow::loadTable()
@@ -208,9 +221,9 @@ void MainWindow::fillTree()
                 if(pit.value() > maxCnt) { maxCnt = pit.value(); proto = pit.key(); }
             }
             QColor base = QColor::fromHsv((colorIndex * 45) % 360, 80, 230);
-            QColor child = base.lighter(150);
+            QColor child = base.lighter(142);
             QTreeWidgetItem *sessionItem = new QTreeWidgetItem(tree);
-            sessionItem->setText(0, QString("session %1").arg(sessionId));
+            sessionItem->setText(0, QString("сессия %1").arg(sessionId));
             sessionItem->setText(7, proto);
             for(int c=0; c<tree->columnCount(); ++c){
                 sessionItem->setBackground(c, QBrush(base));
@@ -220,7 +233,7 @@ void MainWindow::fillTree()
             }
             for(const Packet &p : packets) {
                 QTreeWidgetItem *item = new QTreeWidgetItem(sessionItem);
-                item->setText(0, QString::number(p.ts));
+                item->setText(0, formatTimestamp(p.ts));
                 item->setText(1, QString::number(p.session));
                 item->setText(2, QString::number(p.ipver));
                 item->setText(3, p.src);
@@ -238,7 +251,7 @@ void MainWindow::fillTree()
         for(auto it = sessions.begin(); it != sessions.end(); ++it) {
             for(const Packet &p : it.value()) {
                 QTreeWidgetItem *item = new QTreeWidgetItem(tree);
-                item->setText(0, QString::number(p.ts));
+                item->setText(0, formatTimestamp(p.ts));
                 item->setText(1, QString::number(p.session));
                 item->setText(2, QString::number(p.ipver));
                 item->setText(3, p.src);
@@ -319,14 +332,16 @@ void MainWindow::onPacketDoubleClicked(QTreeWidgetItem *item, int)
 
     for(int c = 0; c < bytesPerLine; ++c)
         packetView->setColumnWidth(c, 30);
-    packetView->setColumnWidth(bytesPerLine, 120);
+    auto *h = packetView->horizontalHeader();
+    h->setSectionResizeMode(bytesPerLine, QHeaderView::Stretch);
+    h->setStretchLastSection(true);
     
 }
 
 void MainWindow::startCapture()
 {
     if(worker) {
-        QMessageBox::warning(this, tr("Capture"), tr("Capture already running"));
+        QMessageBox::warning(this, tr("Захват"), tr("Захват уже запущен"));
         return;
     }
     worker = new CaptureWorker(this);
@@ -346,6 +361,7 @@ void MainWindow::startCapture()
 
     tree->setVisible(false);
     packetView->clear();
+    packetView->setVisible(false);
     loadingLabel->setVisible(true);
     QMovie *mv = new QMovie(":/qt-project.org/styles/commonstyle/images/working-32.gif");
     loadingLabel->setMovie(mv);
@@ -367,6 +383,7 @@ void MainWindow::captureFinished()
     loadingLabel->movie()->stop();
     loadingLabel->setVisible(false);
     tree->setVisible(true);
+    packetView->setVisible(true);
     startButton->setEnabled(true);
     stopButton->setEnabled(false);
     populateAnalysisList();
@@ -376,4 +393,11 @@ void MainWindow::captureFinished()
     free(worker->args.date_time);
     worker->deleteLater();
     worker = nullptr;
+}
+
+QString MainWindow::formatTimestamp(qulonglong ts) const
+{
+    qint64 ms = static_cast<qint64>(ts / 1000ULL);
+    QDateTime dt = QDateTime::fromMSecsSinceEpoch(ms);
+    return dt.toString("yyyy-MM-dd HH:mm:ss.zzz");
 }

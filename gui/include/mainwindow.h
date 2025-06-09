@@ -38,6 +38,7 @@ private:
     void populateAnalysisList();
     void fillTree();
     QByteArray readPacket(qulonglong timestamp);
+    QString formatTimestamp(qulonglong ts) const;
 
     QSqlDatabase metadataDb;
     QSqlDatabase offsetsDb;

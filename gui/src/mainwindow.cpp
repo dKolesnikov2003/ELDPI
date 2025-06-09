@@ -90,13 +90,13 @@ void MainWindow::setupUi()
     tree->setHeaderLabels(headers);
     // Make metadata columns wider by default for better readability
     QHeaderView *treeHeader = tree->header();
-    treeHeader->resizeSection(0, 170); // Time
-    treeHeader->resizeSection(1, 90);  // Session
-    treeHeader->resizeSection(2, 90);  // IP version
-    treeHeader->resizeSection(3, 150); // Source IP
-    treeHeader->resizeSection(4, 150); // Destination IP
-    treeHeader->resizeSection(5, 110); // Source port
-    treeHeader->resizeSection(6, 110); // Destination port
+    treeHeader->resizeSection(0, 300); // Time
+    treeHeader->resizeSection(1, 100);  // Session
+    treeHeader->resizeSection(2, 100);  // IP version
+    treeHeader->resizeSection(3, 250); // Source IP
+    treeHeader->resizeSection(4, 250); // Destination IP
+    treeHeader->resizeSection(5, 160); // Source port
+    treeHeader->resizeSection(6, 160); // Destination port
     treeHeader->resizeSection(7, 160); // Protocol
     tree->setAlternatingRowColors(true);
     tree->setSortingEnabled(true);

@@ -86,7 +86,7 @@ void MainWindow::setupUi()
     tree = new QTreeWidget(this);
     tree->setColumnCount(8);
     QStringList headers;
-    headers << "время" << "сессия" << "ip_версия" << "ip_src" << "ip_dst" << "порт_источника" << "порт_назначения" << "протокол";
+    headers << "Время" << "Сессия" << "Версия IP" << "IP источника" << "IP назначения" << "Порт источника" << "Порт назначения" << "Протокол/Приложение";
     tree->setHeaderLabels(headers);
     tree->setAlternatingRowColors(true);
     tree->setSortingEnabled(true);

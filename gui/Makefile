@@ -2,30 +2,36 @@ CXX ?= g++
 
 CXXFLAGS_BASE := -Wall -Iinclude -I../core/include $(shell pkg-config --cflags Qt5Widgets Qt5Sql) -fPIC
 CXXFLAGS_OPT ?= -O2
-	CXXFLAGS ?= $(CXXFLAGS_OPT) $(CXXFLAGS_BASE)
+CXXFLAGS ?= $(CXXFLAGS_OPT) $(CXXFLAGS_BASE)
 
 LDFLAGS ?= $(shell pkg-config --libs Qt5Widgets Qt5Sql)
-	LDLIBS ?= ../core/libeldpi.a -lpcap -lndpi -lsqlite3 -pthread
 	
-			SANITIZE_FLAGS := -fsanitize=address,undefined
-	DEBUG_FLAGS    := -O0 -g3 -ggdb -fno-omit-frame-pointer -fstack-protector-strong -fno-strict-aliasing -DDEBUG
+SANITIZE_FLAGS := -fsanitize=address,undefined
+DEBUG_FLAGS    := -O0 -g3 -ggdb -fno-omit-frame-pointer -fstack-protector-strong -fno-strict-aliasing -DDEBUG
 
-	BUILD ?= release
-		ifeq ($(BUILD),debug)
-	  CXXFLAGS := $(filter-out -O%,$(CXXFLAGS_BASE)) $(DEBUG_FLAGS) $(shell pkg-config --cflags Qt5Widgets Qt5Sql) -fPIC
-	  LDFLAGS += $(SANITIZE_FLAGS)
+BUILD ?= release
+
+ifneq ($(filter debug,$(MAKECMDGOALS)),)
+  BUILD := debug
+endif
+
+ifeq ($(BUILD),debug)
+  CXXFLAGS := $(filter-out -O%,$(CXXFLAGS_BASE)) $(DEBUG_FLAGS) $(shell pkg-config --cflags Qt5Widgets Qt5Sql) -fPIC
+  LDFLAGS += $(SANITIZE_FLAGS)
   OBJDIR := obj/debug
-		  TARGET := ELDPI-GUI_debug
+  TARGET := ELDPI_debug
   LIBCORE := ../core/libeldpi_debug.a
-	else
-	  OBJDIR ?= obj
-		  TARGET ?= ELDPI-GUI
+  LDLIBS := ../core/libeldpi_debug.a -lpcap -lndpi -lsqlite3 -pthread
+else
+  OBJDIR := obj
+  TARGET := ELDPI
   LIBCORE := ../core/libeldpi.a
-	endif
-	
-	SRCDIR := src
+  LDLIBS := ../core/libeldpi.a -lpcap -lndpi -lsqlite3 -pthread
+endif
+
+SRCDIR := src
 INCDIR := include
-		SRC := $(wildcard $(SRCDIR)/*.cpp)
+SRC := $(wildcard $(SRCDIR)/*.cpp)
 OBJ := $(patsubst $(SRCDIR)/%.cpp,$(OBJDIR)/%.o,$(SRC))
 MOC_HEADERS := $(wildcard $(INCDIR)/*.h)
 MOC_CPP := $(patsubst $(INCDIR)/%.h,$(OBJDIR)/moc_%.cpp,$(MOC_HEADERS))
@@ -53,9 +59,8 @@ $(OBJDIR)/moc_%.cpp: $(INCDIR)/%.h
 $(LIBCORE):
 	$(MAKE) -C ../core BUILD=$(BUILD)
 
-debug:
-	$(MAKE) BUILD=debug
+debug: all
 
 clean:
-	rm -rf obj ELDPI-GUI ELDPI-GUI_debug
+	rm -rf obj ELDPI ELDPI_debug
 

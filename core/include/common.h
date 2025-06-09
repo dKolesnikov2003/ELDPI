@@ -2,6 +2,9 @@
 #define COMMON_H
 
 #define THREAD_COUNT 4
-#define DATA_DIR "/home/dima/ELDPI/data"
+
+#ifndef DATA_DIR
+    #define DATA_DIR "data/"
+#endif
 
 #endif // COMMON_H

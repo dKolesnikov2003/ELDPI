@@ -150,8 +150,10 @@ void MainWindow::populateAnalysisList()
         QString name = q.value(0).toString();
         analysisCombo->addItem(name);
     }
-    if(analysisCombo->count())
+    if(analysisCombo->count()) {
+        analysisCombo->setCurrentIndex(analysisCombo->count()-1);
         loadTable();
+    }
 }
 
 void MainWindow::loadTable()
@@ -209,7 +211,7 @@ void MainWindow::fillTree()
                 if(pit.value() > maxCnt) { maxCnt = pit.value(); proto = pit.key(); }
             }
             QColor base = QColor::fromHsv((colorIndex * 45) % 360, 80, 230);
-            QColor child = base.lighter(150);
+            QColor child = base.lighter(142);
             QTreeWidgetItem *sessionItem = new QTreeWidgetItem(tree);
             sessionItem->setText(0, QString("сессия %1").arg(sessionId));
             sessionItem->setText(7, proto);
@@ -349,6 +351,7 @@ void MainWindow::startCapture()
 
     tree->setVisible(false);
     packetView->clear();
+    packetView->setVisible(false);
     loadingLabel->setVisible(true);
     QMovie *mv = new QMovie(":/qt-project.org/styles/commonstyle/images/working-32.gif");
     loadingLabel->setMovie(mv);
@@ -370,6 +373,7 @@ void MainWindow::captureFinished()
     loadingLabel->movie()->stop();
     loadingLabel->setVisible(false);
     tree->setVisible(true);
+    packetView->setVisible(true);
     startButton->setEnabled(true);
     stopButton->setEnabled(false);
     populateAnalysisList();

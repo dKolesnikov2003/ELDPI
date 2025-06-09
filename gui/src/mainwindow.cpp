@@ -197,59 +197,50 @@ void MainWindow::fillTree()
         protoCount[p.session][p.proto]++;
     }
 
+    auto addPacketItem = [&](QTreeWidgetItem *parent, const Packet &p, const QColor &bg){
+        QTreeWidgetItem *item = parent ? new QTreeWidgetItem(parent) : new QTreeWidgetItem(tree);
+        item->setText(0, QString::number(p.ts));
+        item->setText(1, QString::number(p.session));
+        item->setText(2, QString::number(p.ipver));
+        item->setText(3, p.src);
+        item->setText(4, p.dst);
+        item->setText(5, QString::number(p.sport));
+        item->setText(6, QString::number(p.dport));
+        item->setText(7, p.proto);
+        item->setData(0, Qt::UserRole, QVariant::fromValue(p.ts));
+        if(bg.isValid())
+            for(int c=0;c<tree->columnCount();++c)
+                item->setBackground(c, QBrush(bg));
+    };
+
     bool group = sessionCheck->isChecked();
-    if(group) {
-        int colorIndex = 0;
-        for(auto it = sessions.begin(); it != sessions.end(); ++it) {
-            qulonglong sessionId = it.key();
-            QList<Packet> packets = it.value();
+    int colorIndex = 0;
+    for(auto it = sessions.begin(); it != sessions.end(); ++it) {
+        qulonglong sessionId = it.key();
+        QList<Packet> packets = it.value();
+        QTreeWidgetItem *parentItem = nullptr;
+        QColor childColor;
+        if(group){
             QString proto;
             int maxCnt = 0;
             for(auto pit = protoCount[sessionId].begin(); pit != protoCount[sessionId].end(); ++pit) {
                 if(pit.value() > maxCnt) { maxCnt = pit.value(); proto = pit.key(); }
             }
             QColor base = QColor::fromHsv((colorIndex * 45) % 360, 80, 230);
-            QColor child = base.lighter(150);
-            QTreeWidgetItem *sessionItem = new QTreeWidgetItem(tree);
-            sessionItem->setText(0, QString("session %1").arg(sessionId));
-            sessionItem->setText(7, proto);
+            childColor = base.darker(150);
+            parentItem = new QTreeWidgetItem(tree);
+            parentItem->setText(0, QString("session %1").arg(sessionId));
+            parentItem->setText(7, proto);
             for(int c=0; c<tree->columnCount(); ++c){
-                sessionItem->setBackground(c, QBrush(base));
-                QFont f = sessionItem->font(c);
+                parentItem->setBackground(c, QBrush(base));
+                QFont f = parentItem->font(c);
                 f.setBold(true);
-                sessionItem->setFont(c, f);
-            }
-            for(const Packet &p : packets) {
-                QTreeWidgetItem *item = new QTreeWidgetItem(sessionItem);
-                item->setText(0, QString::number(p.ts));
-                item->setText(1, QString::number(p.session));
-                item->setText(2, QString::number(p.ipver));
-                item->setText(3, p.src);
-                item->setText(4, p.dst);
-                item->setText(5, QString::number(p.sport));
-                item->setText(6, QString::number(p.dport));
-                item->setText(7, p.proto);
-                item->setData(0, Qt::UserRole, QVariant::fromValue(p.ts));
-                for(int c=0;c<tree->columnCount();++c)
-                    item->setBackground(c, QBrush(child));
+                parentItem->setFont(c, f);
             }
             colorIndex++;
         }
-    } else {
-        for(auto it = sessions.begin(); it != sessions.end(); ++it) {
-            for(const Packet &p : it.value()) {
-                QTreeWidgetItem *item = new QTreeWidgetItem(tree);
-                item->setText(0, QString::number(p.ts));
-                item->setText(1, QString::number(p.session));
-                item->setText(2, QString::number(p.ipver));
-                item->setText(3, p.src);
-                item->setText(4, p.dst);
-                item->setText(5, QString::number(p.sport));
-                item->setText(6, QString::number(p.dport));
-                item->setText(7, p.proto);
-                item->setData(0, Qt::UserRole, QVariant::fromValue(p.ts));
-            }
-        }
+        for(const Packet &p : packets)
+            addPacketItem(parentItem, p, childColor);
     }
     tree->expandAll();
 }

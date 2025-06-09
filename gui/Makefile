@@ -29,6 +29,12 @@ else
   LDLIBS := ../core/libeldpi.a -lpcap -lndpi -lsqlite3 -pthread
 endif
 
+ifeq ($(origin DATA_DIR), command line)
+  DATAFLAG += DATA_DIR=\"$(DATA_DIR)\"
+else
+  DATAFLAG :=
+endif
+
 SRCDIR := src
 INCDIR := include
 SRC := $(wildcard $(SRCDIR)/*.cpp)
@@ -57,7 +63,7 @@ $(OBJDIR)/moc_%.cpp: $(INCDIR)/%.h
 	moc $< -o $@
 
 $(LIBCORE):
-	$(MAKE) -C ../core BUILD=$(BUILD)
+	$(MAKE) -C ../core BUILD=$(BUILD) $(DATAFLAG)
 
 debug: all
 

@@ -6,6 +6,12 @@ CFLAGS_BASE := -Wall -I../core/include
 CFLAGS_OPT  ?= -O2
 CFLAGS      ?= $(CFLAGS_OPT) $(CFLAGS_BASE)
 
+ifeq ($(origin DATA_DIR), command line)
+  DATAFLAG += DATA_DIR=\"$(DATA_DIR)\"
+else
+  DATAFLAG :=
+endif
+
 LDFLAGS_BASE ?=
 LDFLAGS      ?= $(LDFLAGS_BASE)
 
@@ -52,7 +58,7 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.c
 # Библиотека ядра как зависимость:
 # если её нет (или устарела), сначала вызываем make в ../core
 $(LIBCORE):
-	$(MAKE) -C ../core BUILD=$(BUILD)
+	$(MAKE) -C ../core BUILD=$(BUILD) $(DATAFLAG)
 
 # Удобная обёртка для сборки debug-варианта
 debug:

@@ -158,6 +158,8 @@ void MainWindow::populateAnalysisList()
     q.exec("SELECT name FROM sqlite_master WHERE type='table'");
     while(q.next()) {
         QString name = q.value(0).toString();
+        if(name == QLatin1String("sqlite_sequence"))
+            continue; 
         analysisCombo->addItem(name);
     }
     if(analysisCombo->count()) {

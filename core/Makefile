@@ -11,6 +11,10 @@ LDFLAGS      ?= $(LDFLAGS_BASE)
 
 LDLIBS  ?= -lpcap -lndpi -lsqlite3
 
+ifeq ($(origin DATA_DIR), command line)
+  CFLAGS += -DDATA_DIR=\"$(DATA_DIR)\"
+endif
+
 # --- Флаги для режима отладки ------------------------------------------------
 SANITIZE_FLAGS := -fsanitize=address,undefined   # адресные, утечки, UBs
 DEBUG_FLAGS    := -O0 -g3 -ggdb -fno-omit-frame-pointer -fstack-protector-strong -fno-strict-aliasing -DDEBUG

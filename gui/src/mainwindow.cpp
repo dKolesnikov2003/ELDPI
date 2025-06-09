@@ -88,6 +88,16 @@ void MainWindow::setupUi()
     QStringList headers;
     headers << "Время" << "Сессия" << "Версия IP" << "IP источника" << "IP назначения" << "Порт источника" << "Порт назначения" << "Протокол/Приложение";
     tree->setHeaderLabels(headers);
+    // Make metadata columns wider by default for better readability
+    QHeaderView *treeHeader = tree->header();
+    treeHeader->resizeSection(0, 170); // Time
+    treeHeader->resizeSection(1, 90);  // Session
+    treeHeader->resizeSection(2, 90);  // IP version
+    treeHeader->resizeSection(3, 150); // Source IP
+    treeHeader->resizeSection(4, 150); // Destination IP
+    treeHeader->resizeSection(5, 110); // Source port
+    treeHeader->resizeSection(6, 110); // Destination port
+    treeHeader->resizeSection(7, 160); // Protocol
     tree->setAlternatingRowColors(true);
     tree->setSortingEnabled(true);
     // tree->setStyleSheet();
@@ -223,7 +233,7 @@ void MainWindow::fillTree()
             }
             for(const Packet &p : packets) {
                 QTreeWidgetItem *item = new QTreeWidgetItem(sessionItem);
-                item->setText(0, QString::number(p.ts));
+                item->setText(0, formatTimestamp(p.ts));
                 item->setText(1, QString::number(p.session));
                 item->setText(2, QString::number(p.ipver));
                 item->setText(3, p.src);
@@ -241,7 +251,7 @@ void MainWindow::fillTree()
         for(auto it = sessions.begin(); it != sessions.end(); ++it) {
             for(const Packet &p : it.value()) {
                 QTreeWidgetItem *item = new QTreeWidgetItem(tree);
-                item->setText(0, QString::number(p.ts));
+                item->setText(0, formatTimestamp(p.ts));
                 item->setText(1, QString::number(p.session));
                 item->setText(2, QString::number(p.ipver));
                 item->setText(3, p.src);
@@ -383,4 +393,11 @@ void MainWindow::captureFinished()
     free(worker->args.date_time);
     worker->deleteLater();
     worker = nullptr;
+}
+
+QString MainWindow::formatTimestamp(qulonglong ts) const
+{
+    qint64 ms = static_cast<qint64>(ts / 1000ULL);
+    QDateTime dt = QDateTime::fromMSecsSinceEpoch(ms);
+    return dt.toString("yyyy-MM-dd HH:mm:ss.zzz");
 }

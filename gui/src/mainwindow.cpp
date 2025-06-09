@@ -386,6 +386,10 @@ void MainWindow::captureFinished()
     packetView->setVisible(true);
     startButton->setEnabled(true);
     stopButton->setEnabled(false);
+    metadataDb.close();
+    offsetsDb.close();
+    metadataDb.open();
+    offsetsDb.open();
     populateAnalysisList();
     worker->wait();
     free(worker->args.source_name);

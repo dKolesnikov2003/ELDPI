@@ -16,17 +16,21 @@ void CaptureWorker::run()
         emit finished();
         return;
     }
-    if(args.source_type == CAP_SRC_IFACE)
+    if(args.source_type == CAP_SRC_FILE) {
         wait_analysis(ctx);
-    else
-        wait_analysis(ctx);
-    destroy_analysis_context(ctx);
-    ctx = nullptr;
-    emit finished();
+        destroy_analysis_context(ctx);
+        ctx = nullptr;
+        emit finished();
+    }
+    
 }
 
 void CaptureWorker::stop()
 {
-    if(ctx)
+    if(ctx) {
         stop_analysis(ctx);
+        destroy_analysis_context(ctx);
+        ctx = nullptr;
+        emit finished();
+    }
 }

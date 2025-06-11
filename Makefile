@@ -1,4 +1,3 @@
-# ------------------------- Makefile (fixed) -------------------------
 # 1. Тип сборки ─ release|debug
 BUILD ?= release
 ifeq ($(BUILD),debug)
@@ -15,7 +14,6 @@ else
 endif
 DATAFLAG := DATA_DIR=$(DATA_DIR)
 
-# 3. Каталог для бинарей (можно переопределить "make BINDIR=..."):
 PREFIX ?= /usr/local
 BINDIR ?= $(PREFIX)/bin
 
@@ -24,8 +22,8 @@ SUBDIRS := core cli gui
 .PHONY: all debug clean install uninstall $(SUBDIRS)
 
 # --------------------------------------------------------------------
-	#  пост-условия
-	all: core/libeldpi$(SUFFIX).a \
+#  пост-условия
+all: core/libeldpi$(SUFFIX).a \
     cli/ELDPI-CLI$(SUFFIX) \
     gui/ELDPI$(SUFFIX)
 

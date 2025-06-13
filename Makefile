@@ -1,12 +1,23 @@
-# 1. Тип сборки ─ release|debug
-BUILD ?= release
+# ==========================================================================
+# Top‑level Makefile for EL‑DPI project
+#   • Default architecture: e2k (Elbrus)
+#   • Alternative architecture: x86/amd64 via targets «x86» or «gcc»
+# ==========================================================================
+
+# --------------------------- Architecture ----------------------------------
+ARCH ?= e2k              # e2k (default) | x86
+
+# Export ARCH so that sub‑directories inherit it automatically
+export ARCH
+
+# ---------------------------- Build type -----------------------------------
+BUILD ?= release         # release | debug
+SUFFIX :=
 ifeq ($(BUILD),debug)
-  SUFFIX := _debug          # бинарям добавляем постфикс _debug
-else
-  SUFFIX :=
+  SUFFIX := _debug       # attach postfix to built binaries/libs
 endif
 
-# 2. Куда положить данные (можно переопределить "make DATA_DIR=..."):
+# ------------------------ Data directory handling --------------------------
 ifeq ($(origin DATA_DIR), command line)
   DATA_DIR := $(DATA_DIR)
 else
@@ -14,19 +25,21 @@ else
 endif
 DATAFLAG := DATA_DIR=$(DATA_DIR)
 
+# ----------------------------- Prefixes ------------------------------------
 PREFIX ?= /usr/local
 BINDIR ?= $(PREFIX)/bin
 
 SUBDIRS := core cli gui
 
-.PHONY: all debug clean install uninstall $(SUBDIRS)
+# ----------------------------- Phony ---------------------------------------
+.PHONY: all x86 gcc debug clean install uninstall $(SUBDIRS)
 
-# --------------------------------------------------------------------
-#  пост-условия
+# ---------------------------- Default target -------------------------------
 all: core/libeldpi$(SUFFIX).a \
-    cli/ELDPI-CLI$(SUFFIX) \
-    gui/ELDPI$(SUFFIX)
+     cli/ELDPI-CLI$(SUFFIX)   \
+     gui/ELDPI$(SUFFIX)
 
+# --------------------- Build rules for sub‑projects ------------------------
 core/libeldpi$(SUFFIX).a:
 	$(MAKE) -C core BUILD=$(BUILD) $(DATAFLAG)
 
@@ -36,35 +49,41 @@ cli/ELDPI-CLI$(SUFFIX): core/libeldpi$(SUFFIX).a
 gui/ELDPI$(SUFFIX): core/libeldpi$(SUFFIX).a
 	$(MAKE) -C gui BUILD=$(BUILD) $(DATAFLAG)
 
+# ---------------------- Architecture aliases -------------------------------
+# Filter out alias targets themselves to avoid infinite recursion
+ALIAS_FILTERED_GOALS := $(filter-out x86 gcc,$(MAKECMDGOALS))
+
+x86 gcc:
+	$(MAKE) ARCH=x86 $(if $(ALIAS_FILTERED_GOALS),$(ALIAS_FILTERED_GOALS),all)
+
+# ------------------------------ Debug --------------------------------------
 debug:
 	$(MAKE) BUILD=debug $(DATAFLAG)
 
+# ------------------------------ Clean --------------------------------------
 clean:
 	for d in $(SUBDIRS); do $(MAKE) -C $$d clean; done
 
-# --------------------------------------------------------------------
-#  установка
+# ----------------------------- Install -------------------------------------
 install: all
-	@echo ">> Установка в $(BINDIR)"
-	install -d  $(BINDIR)
+	@echo ">> Installing to $(BINDIR)"
+	install -d $(BINDIR)
 	install -d -m 777 $(DATA_DIR)
-	install -m 755 cli/ELDPI-CLI $(BINDIR)/ELDPI-CLI
-	install -m 755 gui/ELDPI $(BINDIR)/ELDPI
+	install -m 755 cli/ELDPI-CLI$(SUFFIX) $(BINDIR)/ELDPI-CLI
+	install -m 755 gui/ELDPI$(SUFFIX)      $(BINDIR)/ELDPI
 
-	@echo ">> Назначение прав (setcap)"
-	if command -v setcap >/dev/null; then \
-	  sudo setcap cap_net_raw,cap_net_admin=eip $(BINDIR)/ELDPI	; \
-	  sudo setcap cap_net_raw,cap_net_admin=eip $(BINDIR)/ELDPI-CLI; \
+	@echo ">> Setting capabilities (setcap)"
+	@if command -v setcap >/dev/null; then \
+	  sudo setcap cap_net_raw,cap_net_admin=eip $(BINDIR)/ELDPI      ; \
+	  sudo setcap cap_net_raw,cap_net_admin=eip $(BINDIR)/ELDPI-CLI ; \
 	else \
-	  echo "!! setcap не найден — назначьте права вручную, если нужно."; \
+	  echo "!! setcap not found — set capabilities manually if required."; \
 	fi
-	@echo ">> Установка завершена."
+	@echo ">> Installation completed."
 
-# --------------------------------------------------------------------
-#  удаление
+# ---------------------------- Uninstall ------------------------------------
 uninstall:
-	@echo ">> Удаление из $(BINDIR) и $(DATA_DIR)"
+	@echo ">> Removing from $(BINDIR) and $(DATA_DIR)"
 	rm -f  $(BINDIR)/ELDPI $(BINDIR)/ELDPI-CLI
 	rm -rf $(DATA_DIR)
-	@echo ">> Удаление завершено."
-# --------------------------------------------------------------------
+	@echo ">> Uninstall completed."

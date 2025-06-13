@@ -1,69 +1,96 @@
-# ------------------ Параметры компилятора ------------------
-CC          ?= gcc
+# ==========================================================================
+# Makefile for EL-DPI CLI utility
+#   • Default build: native e2k (lcc)
+#   • Alternative build: x86/amd64 (gcc) via targets «x86» or «gcc»
+# ==========================================================================
 
-# базовые CFLAGS ─ те же, что в core, + путь к её заголовкам
-CFLAGS_BASE := -Wall -I../core/include
-CFLAGS_OPT  ?= -O2
-CFLAGS      ?= $(CFLAGS_OPT) $(CFLAGS_BASE)
+# --------------------------- Архитектура -----------------------------------
+ARCH ?= e2k                # e2k (default) | x86
 
-ifeq ($(origin DATA_DIR), command line)
-  DATAFLAG += DATA_DIR=\"$(DATA_DIR)\"
+ifeq ($(ARCH),e2k)
+	CC ?= lcc
+	ARCH_CFLAGS  := -m64 -me2k -mvliw -vectorize
+	ARCH_LDFLAGS :=
 else
-  DATAFLAG :=
+	CC ?= gcc
+	ARCH_CFLAGS  :=
+	ARCH_LDFLAGS :=
 endif
 
-LDFLAGS_BASE ?=
-LDFLAGS      ?= $(LDFLAGS_BASE)
+export ARCH CC            
+
+# ----------------------------- Флаги ---------------------------------------
+CFLAGS_COMMON := -Wall -I../core/include
+CFLAGS_OPT    ?= -O2
+CFLAGS        ?= $(CFLAGS_OPT) $(CFLAGS_COMMON) $(ARCH_CFLAGS)
+
+LDFLAGS_COMMON ?=
+LDFLAGS        ?= $(LDFLAGS_COMMON) $(ARCH_LDFLAGS)
 
 LDLIBS ?= -lpcap -lndpi -lsqlite3 -pthread
 
-# ------------------ Отладочный режим -----------------------
-SANITIZE_FLAGS := -fsanitize=address,undefined
-DEBUG_FLAGS    := -O0 -g3 -ggdb -fno-omit-frame-pointer -fstack-protector-strong \
-                  -fno-strict-aliasing -DDEBUG
-
-BUILD ?= release      # release | debug
-
-ifeq ($(BUILD),debug)
-  CFLAGS   := $(filter-out -O%,$(CFLAGS_BASE)) $(DEBUG_FLAGS) $(SANITIZE_FLAGS)
-  LDFLAGS  := $(LDFLAGS_BASE) $(SANITIZE_FLAGS)
-  OBJDIR   := obj/debug
-  TARGET   := ELDPI-CLI_debug
-  LIBCORE  := ../core/libeldpi_debug.a
+# Подстановка DATA_DIR (если передано)
+ifeq ($(origin DATA_DIR), command line)
+	DATAFLAG += DATA_DIR=\"$(DATA_DIR)\"
+	CFLAGS   += -DDATA_DIR=\"$(DATA_DIR)\"
 else
-  OBJDIR ?= obj
-  TARGET ?= ELDPI-CLI
-  LIBCORE := ../core/libeldpi.a
+	DATAFLAG :=
 endif
 
-# ------------------ Пути и файлы ---------------------------
+# ------------------------ Debug configuration -----------------------------
+SANITIZE_FLAGS := -fsanitize=address,undefined
+DEBUG_FLAGS    := -O0 -g3 -ggdb -fno-omit-frame-pointer -fstack-protector-strong \
+                 -fno-strict-aliasing -DDEBUG
+
+BUILD ?= release           # release | debug
+
+ifeq ($(BUILD),debug)
+	CFLAGS  := $(filter-out -O%,$(CFLAGS_COMMON)) $(DEBUG_FLAGS) $(SANITIZE_FLAGS) $(ARCH_CFLAGS)
+	LDFLAGS := $(LDFLAGS_COMMON) $(SANITIZE_FLAGS) $(ARCH_LDFLAGS)
+	OBJDIR  := obj/debug
+	TARGET  := ELDPI-CLI_debug
+	LIBCORE := ../core/libeldpi_debug.a
+else
+	OBJDIR  := obj
+	TARGET  := ELDPI-CLI
+	LIBCORE := ../core/libeldpi.a
+endif
+
+# --------------------------- Файлы ----------------------------------------
 SRCDIR := src
 SRC    := $(wildcard $(SRCDIR)/*.c)
 OBJ    := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(SRC))
 
-# ------------------ Цели ----------------------------------
-.PHONY: all debug clean
+# --------------------------- Цели -----------------------------------------
+.PHONY: all x86 gcc debug clean
 
 all: $(TARGET)
 
-# Основной исполняемый файл
-$(TARGET): $(LIBCORE) $(OBJ)
-	$(CC) $(LDFLAGS) $(OBJ) $(LIBCORE) $(LDLIBS) -o $@
+# --- Архитектурные алиасы --------------------------------------------------
+ALIAS_FILTERED_GOALS := $(filter-out x86 gcc,$(MAKECMDGOALS))
 
-# Каждый объект
-$(OBJDIR)/%.o: $(SRCDIR)/%.c
-	@mkdir -p $(OBJDIR)
-	$(CC) $(CFLAGS) -c $< -o $@
+x86 gcc:
+	$(MAKE) ARCH=x86 CC=gcc $(if $(ALIAS_FILTERED_GOALS),$(ALIAS_FILTERED_GOALS),all)
 
-# Библиотека ядра как зависимость:
-# если её нет (или устарела), сначала вызываем make в ../core
-$(LIBCORE):
-	$(MAKE) -C ../core BUILD=$(BUILD) $(DATAFLAG)
-
-# Удобная обёртка для сборки debug-варианта
+# --- Удобная сборка debug ---------------------------------------------------
 debug:
 	$(MAKE) BUILD=debug
 
-# Уборка
+# --- Основной исполняемый файл --------------------------------------------
+$(TARGET): $(LIBCORE) $(OBJ)
+	$(CC) $(LDFLAGS) $(OBJ) $(LIBCORE) $(LDLIBS) -o $@
+
+# --- Компиляция объектов ---------------------------------------------------
+$(OBJDIR)/%.o: $(SRCDIR)/%.c | $(OBJDIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJDIR):
+	@mkdir -p $@
+
+# --- Сборка библиотеки ядра (если требуется) -------------------------------
+$(LIBCORE):
+	$(MAKE) -C ../core ARCH=$(ARCH) CC=$(CC) BUILD=$(BUILD) $(DATAFLAG)
+
+# --- Очистка ---------------------------------------------------------------
 clean:
-	rm -rf obj ELDPI-CLI ELDPI-CLI_debug
+	rm -rf obj obj/debug ELDPI-CLI ELDPI-CLI_debug

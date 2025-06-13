@@ -69,8 +69,8 @@ install: all
 	@echo ">> Installing to $(BINDIR)"
 	install -d $(BINDIR)
 	install -d -m 777 $(DATA_DIR)
-	install -m 755 cli/ELDPI-CLI$(SUFFIX) $(BINDIR)/ELDPI-CLI
-	install -m 755 gui/ELDPI$(SUFFIX)      $(BINDIR)/ELDPI
+	install -m 755 cli/ELDPI-CLI $(BINDIR)/ELDPI-CLI
+	install -m 755 gui/ELDPI $(BINDIR)/ELDPI
 
 	@echo ">> Setting capabilities (setcap)"
 	@if command -v setcap >/dev/null; then \
